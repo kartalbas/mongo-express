@@ -1,0 +1,132 @@
+{% extends 'layout.html' %}
+
+{% block title %}Users - {{ dbName }}{% endblock %}
+
+{% block styles %}
+<style>
+  #pageTitle { display: none; }
+</style>
+{% endblock %}
+
+{% block breadcrumb %}
+<li class="nav-item">
+  <a class="nav-link px-1" href="{{ dbUrl }}">Database:</a>
+</li>
+<li class="nav-item">
+  <a class="nav-link px-1" href="{{ dbUrl }}">{{ dbName }}</a>
+</li>
+<li class="nav-item">
+  <a class="nav-link disabled">Users</a>
+</li>
+{% endblock %}
+
+{% block content %}
+<div class="d-flex align-items-center gap-2 mb-3">
+  <h5 class="mb-0"><i data-lucide="users" class="lucide"></i> User Management</h5>
+  {% if not settings.read_only %}
+  <button type="button" data-bs-toggle="modal" data-bs-target="#addUserModal" class="btn btn-success btn-sm ms-auto">
+    <i data-lucide="plus" class="lucide"></i> Add User
+  </button>
+  {% endif %}
+</div>
+
+{% if users.length == 0 %}
+<div class="alert alert-info">No users found in this database.</div>
+{% else %}
+<div class="card mb-3">
+  <table class="table table-bordered table-striped mb-0" style="font-size: 0.8125rem;">
+    <thead>
+      <tr>
+        <th>Username</th>
+        <th>Roles</th>
+        <th>Mechanisms</th>
+        {% if not settings.read_only and not settings.no_delete %}
+        <th class="text-end">Actions</th>
+        {% endif %}
+      </tr>
+    </thead>
+    <tbody>
+      {% for user in users %}
+      <tr>
+        <td><code>{{ user.user }}</code></td>
+        <td>
+          {% for role in user.roles %}
+          <span class="badge bg-secondary">{{ role.role }}@{{ role.db }}</span>
+          {% endfor %}
+        </td>
+        <td>
+          {% for mech in user.mechanisms %}
+          <span class="badge bg-info text-dark">{{ mech }}</span>
+          {% endfor %}
+        </td>
+        {% if not settings.read_only and not settings.no_delete %}
+        <td class="text-end">
+          <form method="POST" action="{{ dbUrl }}/users" style="display:inline;">
+            <input type="hidden" name="_csrf" value="{{ csrfToken }}">
+            <input type="hidden" name="_method" value="delete">
+            <input type="hidden" name="username" value="{{ user.user }}">
+            <button type="submit" class="btn btn-outline-danger btn-sm"
+              onclick="return confirm('Delete user {{ user.user }}?')">
+              <i data-lucide="trash-2" class="lucide"></i>
+            </button>
+          </form>
+        </td>
+        {% endif %}
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% endif %}
+
+{% if roles.length > 0 %}
+<div class="card mb-3">
+  <div class="card-header py-1 px-2"><strong>Available Roles</strong></div>
+  <div class="card-body py-2 px-2">
+    {% for role in roles %}
+    <span class="badge bg-outline-secondary border mb-1">{{ role.role }}{% if role.isBuiltin %} <small>(built-in)</small>{% endif %}</span>
+    {% endfor %}
+  </div>
+</div>
+{% endif %}
+
+<!-- Add User Modal -->
+{% if not settings.read_only %}
+<div class="modal fade" id="addUserModal" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <form method="POST" action="{{ dbUrl }}/users">
+        <input type="hidden" name="_csrf" value="{{ csrfToken }}">
+        <div class="modal-header">
+          <h5 class="modal-title">Add User</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+        </div>
+        <div class="modal-body">
+          <div class="mb-2">
+            <label class="form-label" style="font-size:0.8125rem;">Username</label>
+            <input type="text" class="form-control form-control-sm" name="username" required>
+          </div>
+          <div class="mb-2">
+            <label class="form-label" style="font-size:0.8125rem;">Password</label>
+            <input type="password" class="form-control form-control-sm" name="password" required>
+          </div>
+          <div class="mb-2">
+            <label class="form-label" style="font-size:0.8125rem;">Roles (JSON array or role name)</label>
+            <textarea class="form-control form-control-sm" name="rolesInput" rows="3" placeholder='[{"role": "readWrite", "db": "{{ dbName }}"}]'>[{"role": "readWrite", "db": "{{ dbName }}"}]</textarea>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="submit" class="btn btn-success btn-sm">
+            <i data-lucide="save" class="lucide"></i> Create User
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+{% endif %}
+{% endblock %}
+
+{% block scripts %}
+<script src="{{ baseHref }}{{assets.users.js}}"></script>
+{% endblock %}

@@ -42,6 +42,42 @@ export default {
       dependOn: 'vendor',
     },
 
+    // Feature 1: Aggregation Pipeline Builder
+    aggregate: {
+      import: './lib/scripts/aggregate.js',
+      dependOn: ['vendor', 'codemirror'],
+    },
+
+    // Feature 5: Validation Rules Editor
+    validation: {
+      import: './lib/scripts/validation.js',
+      dependOn: ['vendor', 'codemirror'],
+    },
+
+    // Feature 10: Monitoring
+    monitoring: {
+      import: './lib/scripts/monitoring.js',
+      dependOn: 'vendor',
+    },
+
+    // Feature 11: User Management
+    users: {
+      import: './lib/scripts/users.js',
+      dependOn: 'vendor',
+    },
+
+    // Feature 12: Replication
+    replication: {
+      import: './lib/scripts/replication.js',
+      dependOn: 'vendor',
+    },
+
+    // Feature 15: Shell
+    shell: {
+      import: './lib/scripts/shell.js',
+      dependOn: ['vendor', 'codemirror'],
+    },
+
     // Shared
     vendor: './lib/scripts/vendor.js',
     codemirror: {

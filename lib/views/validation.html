@@ -1,0 +1,72 @@
+{% extends 'layout.html' %}
+
+{% block title %}Validation - {{ collectionName }}{% endblock %}
+
+{% block styles %}
+<style>
+  #pageTitle { display: none; }
+  .cm-editor { min-height: 200px; }
+</style>
+{% endblock %}
+
+{% block breadcrumb %}
+<li class="nav-item">
+  <a class="nav-link px-1" href="{{ dbUrl }}">Database:</a>
+</li>
+<li class="nav-item">
+  <a class="nav-link px-1" href="{{ dbUrl }}">{{ dbName }}</a>
+</li>
+<li class="nav-item">
+  <a class="nav-link px-1" href="{{ collectionUrl }}">Collection:</a>
+</li>
+<li class="nav-item">
+  <a class="nav-link px-1" href="{{ collectionUrl }}">{{ collectionName }}</a>
+</li>
+<li class="nav-item">
+  <a class="nav-link disabled">Validation</a>
+</li>
+{% endblock %}
+
+{% block content %}
+<div class="card mb-3">
+  <div class="card-header py-1 px-2"><strong>Validation Rules</strong></div>
+  <div class="card-body py-2 px-2">
+    <form method="POST" action="{{ dbUrl }}/validation/{{ collectionName | url_encode }}" id="validationForm">
+      <input type="hidden" name="_csrf" value="{{ csrfToken }}">
+      <input type="hidden" name="_method" value="put">
+
+      <div class="row g-2 mb-2">
+        <div class="col-md-6">
+          <label class="form-label" style="font-size:0.8125rem;">Validation Level</label>
+          <select name="validationLevel" class="form-select form-select-sm">
+            <option value="off" {% if validationLevel == 'off' %}selected{% endif %}>off</option>
+            <option value="strict" {% if validationLevel == 'strict' %}selected{% endif %}>strict</option>
+            <option value="moderate" {% if validationLevel == 'moderate' %}selected{% endif %}>moderate</option>
+          </select>
+        </div>
+        <div class="col-md-6">
+          <label class="form-label" style="font-size:0.8125rem;">Validation Action</label>
+          <select name="validationAction" class="form-select form-select-sm">
+            <option value="error" {% if validationAction == 'error' %}selected{% endif %}>error</option>
+            <option value="warn" {% if validationAction == 'warn' %}selected{% endif %}>warn</option>
+          </select>
+        </div>
+      </div>
+
+      <label class="form-label" style="font-size:0.8125rem;">Validator (JSON Schema)</label>
+      <textarea id="validator" name="validator">{{ validator }}</textarea>
+
+      {% if not settings.read_only %}
+      <button type="submit" class="btn btn-success btn-sm mt-2">
+        <i data-lucide="save" class="lucide"></i> Save Validation Rules
+      </button>
+      {% endif %}
+    </form>
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script src="{{ baseHref }}{{assets.codemirror.js}}"></script>
+<script src="{{ baseHref }}{{assets.validation.js}}"></script>
+{% endblock %}

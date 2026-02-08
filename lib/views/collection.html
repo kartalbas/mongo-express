@@ -38,6 +38,7 @@
 {% endblock %}
 
 {% block content %}
+<input type="hidden" name="_csrf" id="page-csrf" value="{{ csrfToken }}">
 <div class="d-flex align-items-center gap-2 mb-3">
   {% if not settings.read_only %}
   <button type="button" data-bs-toggle="modal" data-bs-target="#addDocument" class="btn btn-success btn-sm">
@@ -98,9 +99,15 @@
                 <option value="U" {% if type=='U' %}selected {% endif %}>UUID (v4)</option>
               </select>
             </div>
-            <div class="col-sm-6 col-md-2 d-grid">
+            <div class="col-sm-6 col-md-2 d-grid gap-1">
               <button type="submit" class="btn btn-primary btn-sm">
                 <i data-lucide="search" class="lucide"></i> Find
+              </button>
+              <button type="button" class="btn btn-outline-info btn-sm"
+                hx-post="{{ dbUrl }}/explain/{{ collectionName | url_encode }}"
+                hx-include="[name='key'],[name='value'],[name='type'],[name='_csrf']"
+                hx-target="#explain-results" hx-swap="innerHTML">
+                <i data-lucide="bar-chart-3" class="lucide"></i> Explain
               </button>
             </div>
           </div>
@@ -127,9 +134,15 @@
                   {% if runAggregate %} checked="checked" {% endif %}>
                 <label class="form-check-label" for="runAggregate" style="font-size: 0.8125rem;">Aggregate</label>
               </div>
-              <div class="d-grid">
+              <div class="d-grid gap-1">
                 <button type="submit" class="btn btn-primary btn-sm">
                   <i data-lucide="search" class="lucide"></i> Find
+                </button>
+                <button type="button" class="btn btn-outline-info btn-sm"
+                  hx-post="{{ dbUrl }}/explain/{{ collectionName | url_encode }}"
+                  hx-include="[name='query'],[name='_csrf']"
+                  hx-target="#explain-results" hx-swap="innerHTML">
+                  <i data-lucide="bar-chart-3" class="lucide"></i> Explain
                 </button>
               </div>
             </div>
@@ -139,6 +152,9 @@
     </div>
   </div>
 </div>
+
+<div id="explain-results"></div>
+<div id="schema-results"></div>
 
 <!-- Add Document Modal -->
 <div class="modal fade" id="addDocument" tabindex="-1" aria-hidden="true">
@@ -185,6 +201,33 @@
           <textarea id="index" name="index">{
     "key": 1
 }</textarea>
+          <hr class="my-2">
+          <div class="row g-2">
+            <div class="col-12">
+              <label class="form-label" style="font-size:0.8125rem;" for="indexName">Index Name <small class="text-muted">(optional)</small></label>
+              <input type="text" class="form-control form-control-sm" id="indexName" name="indexName" placeholder="Auto-generated if empty">
+            </div>
+            <div class="col-6">
+              <div class="form-check">
+                <input class="form-check-input" type="checkbox" id="indexUnique" name="indexUnique" value="true">
+                <label class="form-check-label" for="indexUnique" style="font-size:0.8125rem;">Unique</label>
+              </div>
+            </div>
+            <div class="col-6">
+              <div class="form-check">
+                <input class="form-check-input" type="checkbox" id="indexSparse" name="indexSparse" value="true">
+                <label class="form-check-label" for="indexSparse" style="font-size:0.8125rem;">Sparse</label>
+              </div>
+            </div>
+            <div class="col-6">
+              <label class="form-label" style="font-size:0.8125rem;" for="indexTTL">TTL (seconds) <small class="text-muted">(optional)</small></label>
+              <input type="number" class="form-control form-control-sm" id="indexTTL" name="indexTTL" placeholder="e.g. 3600" min="0">
+            </div>
+            <div class="col-12">
+              <label class="form-label" style="font-size:0.8125rem;" for="indexPartialFilter">Partial Filter Expression <small class="text-muted">(JSON, optional)</small></label>
+              <textarea class="form-control form-control-sm" id="indexPartialFilter" name="indexPartialFilter" rows="2" placeholder='e.g. {"status": "active"}'></textarea>
+            </div>
+          </div>
         </div>
         <div class="modal-footer">
           <button type="submit" class="btn btn-success" onclick="return checkValidIndexJSON()">
@@ -214,64 +257,86 @@
 <div style="position: relative;">
 
 <div class="fadeToWhite" id="fadeToWhiteID"></div>
-<div class="table-responsive tableWrapper">
-  <table class="table table-striped tableHeaderFooterBars">
-    <thead>
-      <tr>
-      {% for column in columns %}
-      <th class="sorting-button" data-column="{{column}}" data-direction="{{sort[column]}}" title="Sort by {{column}}">
-        {{column}}
-        {% if sort[column] == 1 %}
-        <i data-lucide="chevron-up" class="lucide"></i>
-        {% elif sort[column] == -1 %}
-        <i data-lucide="chevron-down" class="lucide"></i>
+<div x-data="bulkSelect()" class="position-relative">
+  <div x-show="selectedIds.length > 0" x-cloak class="alert alert-warning d-flex align-items-center gap-2 py-1 mb-2" style="font-size:0.8125rem;">
+    <strong x-text="selectedIds.length + ' selected'"></strong>
+    {% if not settings.read_only and not settings.no_delete %}
+    <button class="btn btn-danger btn-sm ms-auto" @click="bulkDeleteSelected()">
+      <i data-lucide="trash-2" class="lucide"></i> Delete Selected
+    </button>
+    {% endif %}
+    <button class="btn btn-outline-secondary btn-sm" @click="clearSelection()">Cancel</button>
+  </div>
+  <div class="table-responsive tableWrapper">
+    <table class="table table-striped tableHeaderFooterBars">
+      <thead>
+        <tr>
+          {% if not settings.read_only and not settings.no_delete %}
+          <th style="width:30px;"><input type="checkbox" class="form-check-input" @change="toggleAll($event)"></th>
+          {% endif %}
+          {% for column in columns %}
+          <th class="sorting-button" data-column="{{column}}" data-direction="{{sort[column]}}" title="Sort by {{column}}">
+            {{column}}
+            {% if sort[column] == 1 %}
+            <i data-lucide="chevron-up" class="lucide"></i>
+            {% elif sort[column] == -1 %}
+            <i data-lucide="chevron-down" class="lucide"></i>
+            {% endif %}
+          </th>
+          {% endfor %}
+        </tr>
+      </thead>
+      <tbody>
+      {% for document in docs %}
+      {% if document._id._bsontype == 'Binary' %}
+      <tr id="doc-{{ loop.index0 }}"
+        onclick="loadDocument('{{ collectionUrl }}/{{ document._id | json | safe | url_encode }}?subtype={{ document._id.sub_type }}&skip={{skip}}')">
+        {% elif document._id._bsontype == 'Long' %}
+      <tr id="doc-{{ loop.index0 }}"
+        onclick="loadDocument('{{ collectionUrl }}/{{ document._id | longToString | safe | url_encode }}?skip={{skip}}')">
+        {% else %}
+      <tr id="doc-{{ loop.index0 }}"
+        onclick="loadDocument('{{ collectionUrl }}/{{ document._id | json | safe | url_encode }}?skip={{skip}}')">
         {% endif %}
-      </th>
-      {% endfor %}
-      </tr>
-    </thead>
-    <tbody>
-    {% for document in docs %}
-    {% if document._id._bsontype == 'Binary' %}
-    <tr id="doc-{{ loop.index0 }}"
-      onclick="loadDocument('{{ collectionUrl }}/{{ document._id | json | safe | url_encode }}?subtype={{ document._id.sub_type }}&skip={{skip}}')">
-      {% elif document._id._bsontype == 'Long' %}
-    <tr id="doc-{{ loop.index0 }}"
-      onclick="loadDocument('{{ collectionUrl }}/{{ document._id | longToString | safe | url_encode }}?skip={{skip}}')">
-      {% else %}
-    <tr id="doc-{{ loop.index0 }}"
-      onclick="loadDocument('{{ collectionUrl }}/{{ document._id | json | safe | url_encode }}?skip={{skip}}')">
-      {% endif %}
-      {% for column in columns %}
-      <td>
-        <div class="tableContent">
-          {% if not settings.read_only and not settings.no_delete and column == '_id' and collectionName != 'system.indexes'
-          %}
-          <button class="btn btn-info btn-sm"
-            onclick="loadDocument('{{ collectionUrl }}/{{ document._id | json | safe | url_encode }}')">
-            <i data-lucide="link" class="lucide"></i>
-          </button>
-          <form class="deleteButtonDocument" method="POST" style="display:inline;"
-            action="{{ collectionUrl }}/{{ document._id | json | safe | url_encode }}?subtype={{ document._id.sub_type }}&skip={{ skip }}&key={{ key }}&value={{ value }}&type={{ type }}&query={{ query }}&projection= {{ projection }}">
-            <input type="hidden" name="_method" value="delete">
-            <input type="hidden" name="_csrf" value="{{ csrfToken }}">
-            <button type="submit" class="btn btn-danger btn-sm">
-              <i data-lucide="trash-2" class="lucide"></i>
+        {% if not settings.read_only and not settings.no_delete %}
+        <td onclick="event.stopPropagation()">
+          <input type="checkbox" class="form-check-input bulk-check" value="{{ document._id | json | safe }}" @change="toggleRow($event)">
+        </td>
+        {% endif %}
+        {% for column in columns %}
+        <td {% if not settings.read_only and column != '_id' %}
+          x-data="inlineEdit('{{ document._id | json | safe | url_encode }}', '{{ column }}')"
+          @dblclick.stop="startEdit($el)"
+          {% endif %}>
+          <div class="tableContent">
+            {% if not settings.read_only and not settings.no_delete and column == '_id' and collectionName != 'system.indexes'
+            %}
+            <button class="btn btn-info btn-sm"
+              onclick="loadDocument('{{ collectionUrl }}/{{ document._id | json | safe | url_encode }}')">
+              <i data-lucide="link" class="lucide"></i>
             </button>
-          </form>
-          {% endif %}
-          {% if document[column] | is_URL %}
-          <a href="{{ document[column] }}" target="_blank" rel="noopener noreferrer">{{ document[column] }}</a>
-          {% else %}
-          {{ document[column] | stringDocIDs | to_display | safe }}
-          {% endif %}
-        </div>
-      </td>
+            <form class="deleteButtonDocument" method="POST" style="display:inline;"
+              action="{{ collectionUrl }}/{{ document._id | json | safe | url_encode }}?subtype={{ document._id.sub_type }}&skip={{ skip }}&key={{ key }}&value={{ value }}&type={{ type }}&query={{ query }}&projection= {{ projection }}">
+              <input type="hidden" name="_method" value="delete">
+              <input type="hidden" name="_csrf" value="{{ csrfToken }}">
+              <button type="submit" class="btn btn-danger btn-sm">
+                <i data-lucide="trash-2" class="lucide"></i>
+              </button>
+            </form>
+            {% endif %}
+            {% if document[column] | is_URL %}
+            <a href="{{ document[column] }}" target="_blank" rel="noopener noreferrer">{{ document[column] }}</a>
+            {% else %}
+            {{ document[column] | stringDocIDs | to_display | safe }}
+            {% endif %}
+          </div>
+        </td>
+        {% endfor %}
+      </tr>
       {% endfor %}
-    </tr>
-    {% endfor %}
-    </tbody>
-  </table>
+      </tbody>
+    </table>
+  </div>
 </div>
 </div>
 
@@ -321,6 +386,17 @@
       </a>
     </div>
     {% endif %}
+    <a href="{{ dbUrl }}/aggregate/{{ collectionName | url_encode }}" class="btn btn-outline-secondary btn-sm" title="Aggregation Pipeline Builder">
+      <i data-lucide="layers" class="lucide"></i> Aggregate
+    </a>
+    <a href="{{ dbUrl }}/validation/{{ collectionName | url_encode }}" class="btn btn-outline-secondary btn-sm" title="Validation Rules Editor">
+      <i data-lucide="shield" class="lucide"></i> Validation
+    </a>
+    <button type="button" class="btn btn-outline-secondary btn-sm"
+      hx-get="{{ dbUrl }}/schema/{{ collectionName | url_encode }}"
+      hx-target="#schema-results" hx-swap="innerHTML" title="Analyze schema">
+      <i data-lucide="layers" class="lucide"></i> Schema
+    </button>
     <a href="{{ dbUrl }}/reIndex/{{ collectionName | url_encode }}" class="btn btn-outline-secondary btn-sm" title="Reindex collection">
       <i data-lucide="refresh-cw" class="lucide"></i> Reindex
     </a>
@@ -476,7 +552,14 @@
 </div>
 
 <div class="card mb-3">
-  <div class="card-header"><strong>Indexes</strong></div>
+  <div class="card-header d-flex align-items-center">
+    <strong>Indexes</strong>
+    <button type="button" class="btn btn-outline-info btn-sm ms-auto"
+      hx-get="{{ dbUrl }}/indexStats/{{ collectionName | url_encode }}"
+      hx-target="#index-stats-results" hx-swap="innerHTML" title="Index usage statistics">
+      <i data-lucide="bar-chart-3" class="lucide"></i> Index Stats
+    </button>
+  </div>
   <table class="table table-bordered table-striped mb-0">
     <thead>
       <tr>
@@ -525,11 +608,13 @@
     </tbody>
   </table>
 </div>
+<div id="index-stats-results"></div>
 {% endif %}
 {% endblock %}
 
 
 {% block scripts %}
+<script>ME_SETTINGS.columns = {{ columns | dump | safe }};</script>
 <script src="{{ baseHref }}{{assets.codemirror.js}}"></script>
 <script src="{{ baseHref }}{{assets.collection.js}}"></script>
 {% endblock %}

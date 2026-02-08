@@ -1,0 +1,400 @@
+{% extends 'layout.html' %}
+
+{% block title %}Monitoring{% endblock %}
+
+{% block styles %}
+<style>
+  #pageTitle { display: none; }
+  .metric-card { border-radius: 6px; overflow: hidden; }
+  .metric-card .card-body { padding: 0.625rem 0.75rem; }
+  .metric-label { font-size: 0.6875rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.04em; color: #888; margin-bottom: 0.125rem; }
+  .metric-value { font-size: 1.5rem; font-weight: 700; line-height: 1.2; font-variant-numeric: tabular-nums; }
+  .metric-sub { font-size: 0.6875rem; color: #888; font-variant-numeric: tabular-nums; }
+  .sparkline-container { height: 48px; width: 100%; margin-top: 0.25rem; }
+  .sparkline-container canvas { width: 100% !important; height: 100% !important; display: block; }
+  .chart-row { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 0.75rem; margin-bottom: 0.75rem; }
+  .ops-chart-row { display: grid; grid-template-columns: repeat(auto-fill, minmax(170px, 1fr)); gap: 0.75rem; margin-bottom: 0.75rem; }
+  .section-label { font-size: 0.75rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.06em; color: #666; margin-bottom: 0.5rem; margin-top: 1rem; }
+  .server-badge { font-size: 0.75rem; }
+  .ops-table { font-size: 0.75rem; }
+  .ops-table td, .ops-table th { padding: 0.25rem 0.5rem; vertical-align: middle; }
+  .ops-table th { cursor: pointer; user-select: none; white-space: nowrap; }
+  .ops-table th:hover { color: #3b82f6; }
+  .sort-icon { font-size: 0.625rem; margin-left: 2px; opacity: 0.5; }
+  .sort-icon.active { opacity: 1; color: #3b82f6; }
+  .status-dot { width: 8px; height: 8px; border-radius: 50%; display: inline-block; margin-right: 4px; }
+  .status-dot.active { background: #22c55e; }
+  .status-dot.idle { background: #888; }
+  #monitoring-error { display: none; }
+  .clickable-row { cursor: pointer; }
+  .clickable-row:hover { background: rgba(59,130,246,0.06) !important; }
+  .detail-panel { font-size: 0.75rem; }
+  .detail-panel pre { font-size: 0.6875rem; max-height: 300px; overflow: auto; background: var(--bs-tertiary-bg, #f8f9fa); border-radius: 4px; padding: 0.5rem; margin: 0; }
+  .detail-panel .label { font-weight: 600; color: #888; text-transform: uppercase; font-size: 0.625rem; letter-spacing: 0.04em; }
+  .profiler-controls { font-size: 0.75rem; }
+  .tab-btn { font-size: 0.75rem; padding: 0.25rem 0.75rem; }
+  .slow-badge { font-size: 0.625rem; }
+</style>
+{% endblock %}
+
+{% block breadcrumb %}
+<li class="nav-item">
+  <a class="nav-link disabled">Monitoring</a>
+</li>
+{% endblock %}
+
+{% block content %}
+<div x-data="monitoringApp()">
+  <div class="d-flex align-items-center gap-2 mb-2">
+    <h5 class="mb-0"><i data-lucide="activity" class="lucide"></i> Real-Time Performance</h5>
+    <div class="d-flex align-items-center gap-2 ms-auto">
+      <span class="server-badge badge bg-secondary" x-text="serverInfo"></span>
+      <span class="server-badge badge" :class="connected ? 'bg-success' : 'bg-danger'" x-text="connected ? 'Connected' : 'Disconnected'"></span>
+      <select class="form-select form-select-sm" style="width:auto; font-size:0.75rem;" x-model="pollInterval" @change="restartPolling()">
+        <option value="1000">1s</option>
+        <option value="2000">2s</option>
+        <option value="5000" selected>5s</option>
+        <option value="10000">10s</option>
+      </select>
+      <button class="btn btn-outline-secondary btn-sm" style="font-size:0.75rem;" @click="paused = !paused" x-text="paused ? 'Resume' : 'Pause'"></button>
+    </div>
+  </div>
+
+  <div id="monitoring-error" class="alert alert-danger mt-2"></div>
+
+  <!-- Server Overview -->
+  <div class="section-label">Server</div>
+  <div class="chart-row">
+    <div class="card metric-card">
+      <div class="card-body">
+        <div class="metric-label">Connections</div>
+        <div class="d-flex align-items-baseline gap-2">
+          <span class="metric-value" x-text="fmt(latest.connections?.current)"></span>
+          <span class="metric-sub" x-text="'/ ' + fmt(latest.connections?.available) + ' avail'"></span>
+        </div>
+        <div class="sparkline-container"><canvas id="chart-connections"></canvas></div>
+      </div>
+    </div>
+    <div class="card metric-card">
+      <div class="card-body">
+        <div class="metric-label">Memory Resident</div>
+        <div class="d-flex align-items-baseline gap-2">
+          <span class="metric-value" x-text="fmt(latest.memory?.resident) + ' MB'"></span>
+          <span class="metric-sub" x-text="'Virt: ' + fmt(latest.memory?.virtual) + ' MB'"></span>
+        </div>
+        <div class="sparkline-container"><canvas id="chart-memory"></canvas></div>
+      </div>
+    </div>
+    <div class="card metric-card">
+      <div class="card-body">
+        <div class="metric-label">Network In</div>
+        <div class="d-flex align-items-baseline gap-2">
+          <span class="metric-value" x-text="fmtBytes(deltas.networkIn)"></span>
+          <span class="metric-sub">/s</span>
+        </div>
+        <div class="sparkline-container"><canvas id="chart-netIn"></canvas></div>
+      </div>
+    </div>
+    <div class="card metric-card">
+      <div class="card-body">
+        <div class="metric-label">Network Out</div>
+        <div class="d-flex align-items-baseline gap-2">
+          <span class="metric-value" x-text="fmtBytes(deltas.networkOut)"></span>
+          <span class="metric-sub">/s</span>
+        </div>
+        <div class="sparkline-container"><canvas id="chart-netOut"></canvas></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Operations -->
+  <div class="section-label">Operations per second</div>
+  <div class="ops-chart-row">
+    <template x-for="op in ['insert','query','update','delete','getmore','command']" :key="op">
+      <div class="card metric-card">
+        <div class="card-body">
+          <div class="metric-label" x-text="op"></div>
+          <div class="d-flex align-items-baseline gap-2">
+            <span class="metric-value" style="font-size:1.25rem;" x-text="fmt(deltas[op] || 0)"></span>
+            <span class="metric-sub">/s</span>
+          </div>
+          <div class="sparkline-container"><canvas :id="'chart-op-' + op"></canvas></div>
+        </div>
+      </div>
+    </template>
+  </div>
+
+  <!-- Queue & Clients -->
+  <div class="section-label">Global Lock</div>
+  <div class="chart-row">
+    <div class="card metric-card">
+      <div class="card-body">
+        <div class="metric-label">Active Clients</div>
+        <div class="d-flex align-items-baseline gap-2">
+          <span class="metric-value" x-text="fmt(latest.globalLock?.activeClientsTotal)"></span>
+          <span class="metric-sub" x-text="'R:' + fmt(latest.globalLock?.activeClientsReaders) + ' W:' + fmt(latest.globalLock?.activeClientsWriters)"></span>
+        </div>
+        <div class="sparkline-container"><canvas id="chart-activeClients"></canvas></div>
+      </div>
+    </div>
+    <div class="card metric-card">
+      <div class="card-body">
+        <div class="metric-label">Queued Operations</div>
+        <div class="d-flex align-items-baseline gap-2">
+          <span class="metric-value" x-text="fmt(latest.globalLock?.currentQueueTotal)"></span>
+          <span class="metric-sub" x-text="'R:' + fmt(latest.globalLock?.currentQueueReaders) + ' W:' + fmt(latest.globalLock?.currentQueueWriters)"></span>
+        </div>
+        <div class="sparkline-container"><canvas id="chart-queue"></canvas></div>
+      </div>
+    </div>
+    <div class="card metric-card">
+      <div class="card-body">
+        <div class="metric-label">Page Faults</div>
+        <div class="d-flex align-items-baseline gap-2">
+          <span class="metric-value" style="font-size:1.25rem;" x-text="fmt(deltas.pageFaults || 0)"></span>
+          <span class="metric-sub">/s</span>
+        </div>
+        <div class="sparkline-container"><canvas id="chart-pageFaults"></canvas></div>
+      </div>
+    </div>
+    <div class="card metric-card">
+      <div class="card-body">
+        <div class="metric-label">Uptime</div>
+        <div class="metric-value" style="font-size:1.125rem;" x-text="fmtUptime(latest.uptime)"></div>
+        <div class="metric-sub" x-text="latest.repl ? ('Replica Set: ' + latest.repl.setName) : 'Standalone'"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Tabs: Current Ops / Slow Queries -->
+  <div class="d-flex align-items-center gap-2 mt-3 mb-2">
+    <button class="btn tab-btn" :class="activeTab === 'ops' ? 'btn-primary' : 'btn-outline-secondary'" @click="activeTab = 'ops'">
+      Active Operations
+      <span class="badge bg-light text-dark ms-1" style="font-size:0.625rem;" x-text="filteredOps().length"></span>
+    </button>
+    <button class="btn tab-btn" :class="activeTab === 'slow' ? 'btn-primary' : 'btn-outline-secondary'" @click="activeTab = 'slow'; loadProfiler()">
+      Slow Queries
+      <span class="badge bg-light text-dark ms-1" style="font-size:0.625rem;" x-text="slowQueries.length"></span>
+    </button>
+  </div>
+
+  <!-- ============ ACTIVE OPERATIONS TAB ============ -->
+  <div x-show="activeTab === 'ops'">
+    <!-- Filters -->
+    <div class="d-flex align-items-center gap-2 mb-2 flex-wrap">
+      <select class="form-select form-select-sm" style="width:auto; font-size:0.75rem;" x-model="opsFilter.type">
+        <option value="">All types</option>
+        <option value="op">op</option>
+        <option value="idleCursor">idleCursor</option>
+        <option value="idleSession">idleSession</option>
+      </select>
+      <select class="form-select form-select-sm" style="width:auto; font-size:0.75rem;" x-model="opsFilter.status">
+        <option value="">All status</option>
+        <option value="active">Active only</option>
+        <option value="idle">Idle only</option>
+      </select>
+      <input type="text" class="form-control form-control-sm" style="width:180px; font-size:0.75rem;" placeholder="Search namespace..." x-model="opsFilter.ns">
+      <span class="text-muted" style="font-size:0.6875rem;" x-text="filteredOps().length + ' of ' + currentOps.length + ' ops'"></span>
+    </div>
+
+    <!-- Operations Table -->
+    <div class="card mb-2" x-show="filteredOps().length > 0">
+      <div class="table-responsive" style="max-height: 350px; overflow-y: auto;">
+        <table class="table table-striped mb-0 ops-table">
+          <thead class="sticky-top bg-body">
+            <tr>
+              <th @click="toggleOpsSort('active')">Status <span class="sort-icon" :class="{'active': opsSort.field === 'active'}" x-text="opsSort.field === 'active' ? (opsSort.dir === 1 ? '\u25B2' : '\u25BC') : '\u25BC'"></span></th>
+              <th @click="toggleOpsSort('opid')">Op ID <span class="sort-icon" :class="{'active': opsSort.field === 'opid'}" x-text="opsSort.field === 'opid' ? (opsSort.dir === 1 ? '\u25B2' : '\u25BC') : '\u25BC'"></span></th>
+              <th @click="toggleOpsSort('type')">Type <span class="sort-icon" :class="{'active': opsSort.field === 'type'}" x-text="opsSort.field === 'type' ? (opsSort.dir === 1 ? '\u25B2' : '\u25BC') : '\u25BC'"></span></th>
+              <th @click="toggleOpsSort('ns')">Namespace <span class="sort-icon" :class="{'active': opsSort.field === 'ns'}" x-text="opsSort.field === 'ns' ? (opsSort.dir === 1 ? '\u25B2' : '\u25BC') : '\u25BC'"></span></th>
+              <th @click="toggleOpsSort('microsecs')">Duration <span class="sort-icon" :class="{'active': opsSort.field === 'microsecs'}" x-text="opsSort.field === 'microsecs' ? (opsSort.dir === 1 ? '\u25B2' : '\u25BC') : '\u25BC'"></span></th>
+              <th>Client</th>
+              <th>Plan</th>
+            </tr>
+          </thead>
+          <tbody>
+            <template x-for="(op, idx) in filteredOps()" :key="idx">
+              <tr class="clickable-row" @click="selectedOp = (selectedOp === op ? null : op)">
+                <td><span class="status-dot" :class="op.active ? 'active' : 'idle'"></span></td>
+                <td x-text="op.opid"></td>
+                <td><span class="badge bg-info text-dark" style="font-size:0.625rem;" x-text="op.type"></span></td>
+                <td><code style="font-size:0.6875rem;" x-text="op.ns"></code></td>
+                <td>
+                  <span x-text="fmtDuration(op.microsecs)"></span>
+                  <span class="badge bg-danger slow-badge" x-show="op.microsecs > 1000000">SLOW</span>
+                </td>
+                <td style="max-width:120px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;" x-text="op.client || op.appName"></td>
+                <td><code style="font-size:0.625rem;" x-text="op.planSummary || '\u2014'"></code></td>
+              </tr>
+            </template>
+          </tbody>
+        </table>
+      </div>
+    </div>
+    <div class="text-muted" style="font-size:0.75rem;" x-show="filteredOps().length === 0">No operations matching filters.</div>
+
+    <!-- Operation Detail Panel -->
+    <div class="card mb-3 detail-panel" x-show="selectedOp" x-transition>
+      <div class="card-header d-flex align-items-center py-1 px-2">
+        <strong style="font-size:0.75rem;">Operation Detail</strong>
+        <button class="btn btn-sm btn-close ms-auto" @click="selectedOp = null" style="font-size:0.5rem;"></button>
+      </div>
+      <div class="card-body p-2" x-show="selectedOp">
+        <div class="row g-2 mb-2">
+          <div class="col-auto"><span class="label">Op ID:</span> <span x-text="selectedOp?.opid"></span></div>
+          <div class="col-auto"><span class="label">Type:</span> <span x-text="selectedOp?.type"></span></div>
+          <div class="col-auto"><span class="label">Namespace:</span> <code x-text="selectedOp?.ns"></code></div>
+          <div class="col-auto"><span class="label">Duration:</span> <span x-text="fmtDuration(selectedOp?.microsecs)"></span></div>
+          <div class="col-auto"><span class="label">Active:</span> <span x-text="selectedOp?.active ? 'Yes' : 'No'"></span></div>
+          <div class="col-auto"><span class="label">Waiting for lock:</span> <span x-text="selectedOp?.waitingForLock ? 'Yes' : 'No'"></span></div>
+          <div class="col-auto"><span class="label">Yields:</span> <span x-text="selectedOp?.numYields || 0"></span></div>
+          <div class="col-auto"><span class="label">Client:</span> <span x-text="selectedOp?.client"></span></div>
+          <div class="col-auto"><span class="label">App:</span> <span x-text="selectedOp?.appName || '\u2014'"></span></div>
+          <div class="col-auto"><span class="label">Plan:</span> <code x-text="selectedOp?.planSummary || '\u2014'"></code></div>
+        </div>
+        <div x-show="selectedOp?.command">
+          <div class="label mb-1">Command / Query:</div>
+          <pre x-text="selectedOp?.command"></pre>
+        </div>
+        <div x-show="selectedOp?.locks" class="mt-2">
+          <div class="label mb-1">Locks:</div>
+          <pre x-text="selectedOp?.locks"></pre>
+        </div>
+        <div class="mt-1 text-muted" x-text="selectedOp?.desc"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============ SLOW QUERIES TAB ============ -->
+  <div x-show="activeTab === 'slow'">
+    <!-- Profiler Controls -->
+    <div class="card mb-2 profiler-controls">
+      <div class="card-body py-2 px-3 d-flex align-items-center gap-2 flex-wrap">
+        <span class="label" style="font-size:0.6875rem; font-weight:600; text-transform:uppercase; color:#888;">Database:</span>
+        <select class="form-select form-select-sm" style="width:auto; font-size:0.75rem;" x-model="profilerDb" @change="loadProfiler()">
+          <option value="">Select...</option>
+          {% for db in dbNames %}
+          <option value="{{ db }}">{{ db }}</option>
+          {% endfor %}
+        </select>
+        <span class="label" style="font-size:0.6875rem; font-weight:600; text-transform:uppercase; color:#888;">Profiler:</span>
+        <select class="form-select form-select-sm" style="width:auto; font-size:0.75rem;" x-model="profilerLevel" @change="setProfiler()">
+          <option value="0">Off (0)</option>
+          <option value="1">Slow ops (1)</option>
+          <option value="2">All ops (2)</option>
+        </select>
+        <span class="label" style="font-size:0.6875rem; font-weight:600; text-transform:uppercase; color:#888;">Slow ms:</span>
+        <input type="number" class="form-control form-control-sm" style="width:80px; font-size:0.75rem;" x-model="profilerSlowMs" @change="setProfiler()">
+        <button class="btn btn-outline-secondary btn-sm" style="font-size:0.75rem;" @click="loadProfiler()">Refresh</button>
+        <span class="text-muted ms-auto" style="font-size:0.6875rem;" x-show="profilerDb" x-text="'Level: ' + profilerLevel + ' | Threshold: ' + profilerSlowMs + 'ms'"></span>
+      </div>
+    </div>
+
+    <!-- Slow query filters -->
+    <div class="d-flex align-items-center gap-2 mb-2 flex-wrap" x-show="profilerDb">
+      <select class="form-select form-select-sm" style="width:auto; font-size:0.75rem;" x-model="slowFilter.type">
+        <option value="">All ops</option>
+        <option value="query">query</option>
+        <option value="insert">insert</option>
+        <option value="update">update</option>
+        <option value="remove">remove</option>
+        <option value="command">command</option>
+        <option value="getmore">getmore</option>
+      </select>
+      <input type="number" class="form-control form-control-sm" style="width:100px; font-size:0.75rem;" placeholder="Min ms..." x-model="slowFilter.minMs">
+      <input type="text" class="form-control form-control-sm" style="width:180px; font-size:0.75rem;" placeholder="Search namespace..." x-model="slowFilter.ns">
+      <select class="form-select form-select-sm" style="width:auto; font-size:0.75rem;" x-model="slowSort.field" @change="loadProfiler()">
+        <option value="ts">Sort: Time</option>
+        <option value="millis">Sort: Duration</option>
+        <option value="docsExamined">Sort: Docs Examined</option>
+      </select>
+      <select class="form-select form-select-sm" style="width:auto; font-size:0.75rem;" x-model="slowSort.dir" @change="loadProfiler()">
+        <option value="desc">Descending</option>
+        <option value="asc">Ascending</option>
+      </select>
+    </div>
+
+    <!-- Slow Queries Table -->
+    <div class="card mb-2" x-show="filteredSlowQueries().length > 0">
+      <div class="table-responsive" style="max-height: 400px; overflow-y: auto;">
+        <table class="table table-striped mb-0 ops-table">
+          <thead class="sticky-top bg-body">
+            <tr>
+              <th>Time</th>
+              <th>Op</th>
+              <th>Namespace</th>
+              <th>Duration</th>
+              <th>Plan</th>
+              <th>Docs Examined</th>
+              <th>Keys Examined</th>
+              <th>Returned</th>
+              <th>Client</th>
+            </tr>
+          </thead>
+          <tbody>
+            <template x-for="(q, idx) in filteredSlowQueries()" :key="idx">
+              <tr class="clickable-row" @click="selectedSlow = (selectedSlow === q ? null : q)">
+                <td style="white-space:nowrap;" x-text="fmtTimestamp(q.ts)"></td>
+                <td><span class="badge bg-info text-dark" style="font-size:0.625rem;" x-text="q.op"></span></td>
+                <td><code style="font-size:0.6875rem;" x-text="q.ns"></code></td>
+                <td>
+                  <span x-text="q.millis + 'ms'"></span>
+                  <span class="badge bg-danger slow-badge" x-show="q.millis > 1000">SLOW</span>
+                  <span class="badge bg-warning text-dark slow-badge" x-show="q.millis > 100 && q.millis <= 1000">WARN</span>
+                </td>
+                <td><code style="font-size:0.625rem;" x-text="q.planSummary || '\u2014'"></code></td>
+                <td x-text="fmt(q.docsExamined)"></td>
+                <td x-text="fmt(q.keysExamined)"></td>
+                <td x-text="fmt(q.nreturned)"></td>
+                <td style="max-width:100px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;" x-text="q.client || q.appName"></td>
+              </tr>
+            </template>
+          </tbody>
+        </table>
+      </div>
+    </div>
+    <div class="text-muted" style="font-size:0.75rem;" x-show="profilerDb && filteredSlowQueries().length === 0">No slow queries found. Ensure profiler is enabled (level 1 or 2).</div>
+    <div class="text-muted" style="font-size:0.75rem;" x-show="!profilerDb">Select a database to view profiler data.</div>
+
+    <!-- Slow Query Detail Panel -->
+    <div class="card mb-3 detail-panel" x-show="selectedSlow" x-transition>
+      <div class="card-header d-flex align-items-center py-1 px-2">
+        <strong style="font-size:0.75rem;">Slow Query Detail</strong>
+        <button class="btn btn-sm btn-close ms-auto" @click="selectedSlow = null" style="font-size:0.5rem;"></button>
+      </div>
+      <div class="card-body p-2" x-show="selectedSlow">
+        <div class="row g-2 mb-2">
+          <div class="col-auto"><span class="label">Time:</span> <span x-text="selectedSlow?.ts"></span></div>
+          <div class="col-auto"><span class="label">Op:</span> <span x-text="selectedSlow?.op"></span></div>
+          <div class="col-auto"><span class="label">Namespace:</span> <code x-text="selectedSlow?.ns"></code></div>
+          <div class="col-auto"><span class="label">Duration:</span> <strong x-text="selectedSlow?.millis + 'ms'"></strong></div>
+          <div class="col-auto"><span class="label">Plan:</span> <code x-text="selectedSlow?.planSummary || '\u2014'"></code></div>
+        </div>
+        <div class="row g-2 mb-2">
+          <div class="col-auto"><span class="label">Docs Examined:</span> <span x-text="fmt(selectedSlow?.docsExamined)"></span></div>
+          <div class="col-auto"><span class="label">Keys Examined:</span> <span x-text="fmt(selectedSlow?.keysExamined)"></span></div>
+          <div class="col-auto"><span class="label">Returned:</span> <span x-text="fmt(selectedSlow?.nreturned)"></span></div>
+          <div class="col-auto"><span class="label">Response Length:</span> <span x-text="fmtBytes(selectedSlow?.responseLength || 0)"></span></div>
+          <div class="col-auto"><span class="label">Client:</span> <span x-text="selectedSlow?.client"></span></div>
+          <div class="col-auto"><span class="label">App:</span> <span x-text="selectedSlow?.appName || '\u2014'"></span></div>
+        </div>
+        <div x-show="selectedSlow?.command">
+          <div class="label mb-1">Command / Query:</div>
+          <pre x-text="selectedSlow?.command"></pre>
+        </div>
+        <div x-show="selectedSlow?.execStats" class="mt-2">
+          <div class="label mb-1">Execution Stats:</div>
+          <pre x-text="selectedSlow?.execStats"></pre>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+  window.ME_DB_NAMES = {{ dbNames | dump | safe }};
+</script>
+<script src="{{ baseHref }}{{assets.monitoring.js}}"></script>
+{% endblock %}

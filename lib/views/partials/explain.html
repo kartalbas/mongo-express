@@ -1,0 +1,27 @@
+<div class="card mb-3">
+  <div class="card-header py-1 px-2"><strong>Explain Plan</strong></div>
+  <div class="card-body py-2 px-2">
+    {% if error %}
+    <div class="alert alert-danger mb-0">{{ error }}</div>
+    {% else %}
+    <div class="d-flex flex-wrap gap-2 mb-2">
+      {% if winningPlan.stage == 'COLLSCAN' %}
+      <span class="badge bg-danger">COLLSCAN</span>
+      {% else %}
+      <span class="badge bg-success">{{ winningPlan.stage }}</span>
+      {% endif %}
+      {% if winningPlan.inputStage %}
+      <span class="badge bg-info text-dark">{{ winningPlan.inputStage.stage }}{% if winningPlan.inputStage.indexName %}: {{ winningPlan.inputStage.indexName }}{% endif %}</span>
+      {% endif %}
+    </div>
+    <table class="table table-bordered table-striped mb-0" style="font-size: 0.8125rem;">
+      <tbody>
+        <tr><td><strong>nReturned</strong></td><td>{{ executionStats.nReturned }}</td></tr>
+        <tr><td><strong>executionTimeMs</strong></td><td>{{ executionStats.executionTimeMillis }} ms</td></tr>
+        <tr><td><strong>totalKeysExamined</strong></td><td>{{ executionStats.totalKeysExamined }}</td></tr>
+        <tr><td><strong>totalDocsExamined</strong></td><td>{{ executionStats.totalDocsExamined }}</td></tr>
+      </tbody>
+    </table>
+    {% endif %}
+  </div>
+</div>

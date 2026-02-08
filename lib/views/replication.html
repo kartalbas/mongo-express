@@ -1,0 +1,134 @@
+{% extends 'layout.html' %}
+
+{% block title %}Replication{% endblock %}
+
+{% block breadcrumb %}
+<li class="nav-item">
+  <a class="nav-link disabled">Replication</a>
+</li>
+{% endblock %}
+
+{% block content %}
+<h5 class="mb-3">
+  <i data-lucide="git-branch" class="lucide"></i> Replication & Sharding
+</h5>
+
+{% if error %}
+<div class="alert alert-danger">{{ error }}</div>
+{% endif %}
+
+{% if isStandalone %}
+<div class="alert alert-info">
+  This MongoDB instance is running as a <strong>standalone</strong> server (no replica set configured).
+</div>
+{% endif %}
+
+{% if replSet %}
+<div class="card mb-3">
+  <div class="card-header py-1 px-2">
+    <strong>Replica Set: {{ replSet.set }}</strong>
+    <span class="badge bg-info text-dark ms-2">{{ replSet.members.length }} member(s)</span>
+  </div>
+  <div class="table-responsive">
+    <table class="table table-bordered table-striped mb-0" style="font-size: 0.8125rem;">
+      <thead>
+        <tr>
+          <th>Host</th>
+          <th>State</th>
+          <th>Health</th>
+          <th>Uptime</th>
+          <th>Optime</th>
+          <th>Lag</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for member in replSet.members %}
+        <tr>
+          <td><code>{{ member.name }}</code></td>
+          <td>
+            {% if member.stateStr == 'PRIMARY' %}
+            <span class="badge bg-success">{{ member.stateStr }}</span>
+            {% elif member.stateStr == 'SECONDARY' %}
+            <span class="badge bg-primary">{{ member.stateStr }}</span>
+            {% elif member.stateStr == 'ARBITER' %}
+            <span class="badge bg-warning text-dark">{{ member.stateStr }}</span>
+            {% else %}
+            <span class="badge bg-secondary">{{ member.stateStr }}</span>
+            {% endif %}
+          </td>
+          <td>
+            {% if member.health == 1 %}
+            <span class="badge bg-success">Healthy</span>
+            {% else %}
+            <span class="badge bg-danger">Down</span>
+            {% endif %}
+          </td>
+          <td>{{ member.uptime }}s</td>
+          <td>{{ member.optimeDate }}</td>
+          <td>
+            {% if member.stateStr == 'PRIMARY' %}
+            <span class="text-muted">-</span>
+            {% else %}
+            {{ member.lag or 'N/A' }}
+            {% endif %}
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endif %}
+
+{% if replConfig %}
+<div class="card mb-3">
+  <div class="card-header py-1 px-2"><strong>Replica Set Configuration</strong></div>
+  <div class="card-body py-2 px-2">
+    <pre style="font-size:0.75rem; max-height:300px; overflow:auto;">{{ replConfig | dump(2) | safe }}</pre>
+  </div>
+</div>
+{% endif %}
+
+{% if shards %}
+<div class="card mb-3">
+  <div class="card-header py-1 px-2">
+    <strong>Shards</strong>
+    <span class="badge bg-info text-dark ms-2">{{ shards.length }} shard(s)</span>
+  </div>
+  <div class="table-responsive">
+    <table class="table table-bordered table-striped mb-0" style="font-size: 0.8125rem;">
+      <thead>
+        <tr>
+          <th>Shard ID</th>
+          <th>Host</th>
+          <th>State</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for shard in shards %}
+        <tr>
+          <td><code>{{ shard._id }}</code></td>
+          <td>{{ shard.host }}</td>
+          <td>
+            {% if shard.state == 1 %}
+            <span class="badge bg-success">Active</span>
+            {% else %}
+            <span class="badge bg-secondary">{{ shard.state }}</span>
+            {% endif %}
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endif %}
+
+{% if not replSet and not shards and not isStandalone and not error %}
+<div class="alert alert-info">No replication or sharding information available.</div>
+{% endif %}
+{% endblock %}
+
+{% block scripts %}
+<script src="{{ baseHref }}{{assets.replication.js}}"></script>
+{% endblock %}

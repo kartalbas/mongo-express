@@ -1,0 +1,45 @@
+<div class="card mb-3">
+  <div class="card-header py-1 px-2"><strong>Index Usage Statistics</strong></div>
+  <div class="card-body py-2 px-2">
+    {% if error %}
+    <div class="alert alert-danger mb-0">{{ error }}</div>
+    {% elif indexStats.length == 0 %}
+    <p class="mb-0 text-muted">No index stats available.</p>
+    {% else %}
+    <table class="table table-bordered table-striped mb-0" style="font-size: 0.8125rem;">
+      <thead>
+        <tr>
+          <th>Name</th>
+          <th>Key</th>
+          <th>Ops Since Startup</th>
+          <th>Since</th>
+          <th>Status</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for idx in indexStats %}
+        <tr>
+          <td><code>{{ idx.name }}</code></td>
+          <td>
+            {% for k, v in idx.key %}
+            <span class="badge bg-secondary">{{ k }}: {{ v }}</span>
+            {% endfor %}
+          </td>
+          <td>{{ idx.accesses.ops }}</td>
+          <td>{{ idx.accesses.since }}</td>
+          <td>
+            {% if idx.name == '_id_' %}
+            <span class="badge bg-info text-dark">System</span>
+            {% elif idx.accesses.ops == 0 %}
+            <span class="badge bg-warning text-dark">Unused</span>
+            {% else %}
+            <span class="badge bg-success">Active</span>
+            {% endif %}
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+    {% endif %}
+  </div>
+</div>

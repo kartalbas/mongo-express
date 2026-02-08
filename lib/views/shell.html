@@ -1,0 +1,73 @@
+{% extends 'layout.html' %}
+
+{% block title %}Shell - {{ dbName }}{% endblock %}
+
+{% block styles %}
+<style>
+  #pageTitle { display: none; }
+  #shell-input .cm-editor { min-height: 80px; }
+  #shell-output { max-height: 500px; overflow-y: auto; font-family: monospace; font-size: 0.8125rem; }
+</style>
+{% endblock %}
+
+{% block breadcrumb %}
+<li class="nav-item">
+  <a class="nav-link px-1" href="{{ dbUrl }}">Database:</a>
+</li>
+<li class="nav-item">
+  <a class="nav-link px-1" href="{{ dbUrl }}">{{ dbName }}</a>
+</li>
+<li class="nav-item">
+  <a class="nav-link disabled">Shell</a>
+</li>
+{% endblock %}
+
+{% block content %}
+<div x-data="shellApp()">
+  <div class="d-flex align-items-center gap-2 mb-3">
+    <h5 class="mb-0"><i data-lucide="terminal" class="lucide"></i> MongoDB Shell</h5>
+    <small class="text-muted">Database: {{ dbName }}</small>
+    <button class="btn btn-outline-secondary btn-sm ms-auto" @click="clearOutput()">Clear</button>
+  </div>
+
+  <div class="card mb-3">
+    <div class="card-body py-2 px-2" id="shell-output">
+      <template x-for="(entry, i) in history" :key="i">
+        <div class="mb-2">
+          <div class="text-info" x-text="'> ' + entry.command"></div>
+          <div x-show="entry.error" class="text-danger" x-text="entry.error"></div>
+          <pre x-show="entry.result" class="mb-0 text-success" style="white-space: pre-wrap;" x-text="entry.resultText"></pre>
+        </div>
+      </template>
+      <div x-show="history.length === 0" class="text-muted">
+        Type a command below. Supported: <code>show dbs</code>, <code>show collections</code>,
+        <code>db.collection.find({})</code>, <code>db.runCommand({})</code>, etc.
+      </div>
+    </div>
+  </div>
+
+  <div class="card mb-3">
+    <div class="card-body py-2 px-2" id="shell-input">
+      <textarea id="shell-command" placeholder='db.collection.find({})'>db.{{ collectionName or 'collection' }}.find({})</textarea>
+    </div>
+    <div class="card-footer py-1 px-2 d-flex gap-2">
+      <button class="btn btn-primary btn-sm" @click="executeCommand()">
+        <i data-lucide="search" class="lucide"></i> Execute
+      </button>
+      <div class="btn-group btn-group-sm ms-auto">
+        <button class="btn btn-outline-secondary" @click="historyBack()" title="Previous command">
+          <i data-lucide="chevron-up" class="lucide"></i>
+        </button>
+        <button class="btn btn-outline-secondary" @click="historyForward()" title="Next command">
+          <i data-lucide="chevron-down" class="lucide"></i>
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script src="{{ baseHref }}{{assets.codemirror.js}}"></script>
+<script src="{{ baseHref }}{{assets.shell.js}}"></script>
+{% endblock %}

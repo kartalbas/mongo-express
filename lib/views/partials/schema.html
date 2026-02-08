@@ -1,0 +1,41 @@
+<div class="card mb-3">
+  <div class="card-header py-1 px-2"><strong>Schema Analysis</strong> <small class="text-muted">(sampled {{ sampleSize }} docs)</small></div>
+  <div class="card-body py-2 px-2">
+    {% if error %}
+    <div class="alert alert-danger mb-0">{{ error }}</div>
+    {% elif fields.length == 0 %}
+    <p class="mb-0 text-muted">No documents found to analyze.</p>
+    {% else %}
+    <table class="table table-bordered table-striped mb-0" style="font-size: 0.8125rem;">
+      <thead>
+        <tr>
+          <th>Field</th>
+          <th>Types</th>
+          <th>Frequency</th>
+          <th>Sample Values</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for field in fields %}
+        <tr>
+          <td><code>{{ field.name }}</code></td>
+          <td>
+            {% for typeName, pct in field.types %}
+            <span class="badge bg-secondary">{{ typeName }} {{ pct }}%</span>
+            {% endfor %}
+          </td>
+          <td>
+            <div class="progress" style="min-width: 80px; height: 16px;">
+              <div class="progress-bar" role="progressbar" style="width: {{ field.frequency }}%;" aria-valuenow="{{ field.frequency }}" aria-valuemin="0" aria-valuemax="100">{{ field.frequency }}%</div>
+            </div>
+          </td>
+          <td style="max-width: 200px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">
+            <small>{{ field.samples | join(', ') }}</small>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+    {% endif %}
+  </div>
+</div>

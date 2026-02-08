@@ -31,6 +31,18 @@
         {% block breadcrumb %}
         {% endblock %}
       </ul>
+      <ul class="navbar-nav ms-auto me-2">
+        <li class="nav-item">
+          <a class="nav-link py-1 px-2" href="{{ baseHref }}monitoring" style="font-size:0.8125rem;">
+            <i data-lucide="activity" class="lucide"></i> Monitoring
+          </a>
+        </li>
+        <li class="nav-item">
+          <a class="nav-link py-1 px-2" href="{{ baseHref }}replication" style="font-size:0.8125rem;">
+            <i data-lucide="git-branch" class="lucide"></i> Replication
+          </a>
+        </li>
+      </ul>
       <div class="dark-mode-toggle" x-data="darkMode" @click="toggle()" style="cursor:pointer;">
         <i data-lucide="moon" x-show="!isDark" class="lucide"></i>
         <i data-lucide="sun" x-show="isDark" class="lucide"></i>
@@ -89,5 +101,6 @@
 </script>
 {% block scripts %}
 {% endblock %}
+<script>Alpine.start();</script>
 </body>
 </html>

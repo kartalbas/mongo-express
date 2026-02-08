@@ -1,0 +1,98 @@
+{% if error %}
+<div class="alert alert-danger">{{ error }}</div>
+{% else %}
+<div class="row g-2 mb-3">
+  <div class="col-md-3">
+    <div class="card">
+      <div class="card-body py-2 px-2 text-center">
+        <div class="text-muted" style="font-size:0.75rem;">Connections</div>
+        <div class="fs-4 fw-bold">{{ metrics.connections.current }}</div>
+        <small class="text-muted">/ {{ metrics.connections.available }} available</small>
+      </div>
+    </div>
+  </div>
+  <div class="col-md-3">
+    <div class="card">
+      <div class="card-body py-2 px-2 text-center">
+        <div class="text-muted" style="font-size:0.75rem;">Memory (Resident)</div>
+        <div class="fs-4 fw-bold">{{ metrics.memory.resident }} MB</div>
+        <small class="text-muted">Virtual: {{ metrics.memory.virtual }} MB</small>
+      </div>
+    </div>
+  </div>
+  <div class="col-md-3">
+    <div class="card">
+      <div class="card-body py-2 px-2 text-center">
+        <div class="text-muted" style="font-size:0.75rem;">Network Requests</div>
+        <div class="fs-4 fw-bold">{{ metrics.network.numRequests }}</div>
+        <small class="text-muted">In/Out: {{ metrics.network.bytesIn }} / {{ metrics.network.bytesOut }}</small>
+      </div>
+    </div>
+  </div>
+  <div class="col-md-3">
+    <div class="card">
+      <div class="card-body py-2 px-2 text-center">
+        <div class="text-muted" style="font-size:0.75rem;">Version / Uptime</div>
+        <div class="fs-5 fw-bold">{{ metrics.version }}</div>
+        <small class="text-muted">{{ (metrics.uptime / 86400) | round(1) }} days</small>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="card mb-3">
+  <div class="card-header py-1 px-2"><strong>Op Counters</strong></div>
+  <table class="table table-bordered table-striped mb-0" style="font-size: 0.8125rem;">
+    <thead>
+      <tr>
+        <th>Insert</th>
+        <th>Query</th>
+        <th>Update</th>
+        <th>Delete</th>
+        <th>GetMore</th>
+        <th>Command</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td>{{ metrics.opcounters.insert }}</td>
+        <td>{{ metrics.opcounters.query }}</td>
+        <td>{{ metrics.opcounters.update }}</td>
+        <td>{{ metrics.opcounters.delete }}</td>
+        <td>{{ metrics.opcounters.getmore }}</td>
+        <td>{{ metrics.opcounters.command }}</td>
+      </tr>
+    </tbody>
+  </table>
+</div>
+
+{% if currentOps.length > 0 %}
+<div class="card mb-3">
+  <div class="card-header py-1 px-2"><strong>Current Operations</strong> <span class="badge bg-secondary">{{ currentOps.length }}</span></div>
+  <div class="table-responsive">
+    <table class="table table-bordered table-striped mb-0" style="font-size: 0.75rem;">
+      <thead>
+        <tr>
+          <th>OpId</th>
+          <th>Type</th>
+          <th>Namespace</th>
+          <th>Duration (ms)</th>
+          <th>Description</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for op in currentOps %}
+        <tr>
+          <td>{{ op.opid }}</td>
+          <td><span class="badge bg-info text-dark">{{ op.type or op.op }}</span></td>
+          <td>{{ op.ns }}</td>
+          <td>{{ op.microsecs_running / 1000 if op.microsecs_running else (op.secs_running * 1000 if op.secs_running else 'N/A') }}</td>
+          <td style="max-width: 300px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">{{ op.desc or '' }}</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endif %}
+{% endif %}

@@ -109,6 +109,15 @@
 </div>
 {% endif %}
 
+<div class="d-flex flex-wrap gap-2 mb-3">
+  <a href="{{ dbUrl }}/users" class="btn btn-outline-secondary btn-sm">
+    <i data-lucide="users" class="lucide"></i> Users
+  </a>
+  <a href="{{ dbUrl }}/shell" class="btn btn-outline-secondary btn-sm">
+    <i data-lucide="terminal" class="lucide"></i> Shell
+  </a>
+</div>
+
 {% if grids.length and settings.gridFSEnabled %}
 <div class="card mb-3">
   <div class="card-header d-flex align-items-center py-1 px-1">
