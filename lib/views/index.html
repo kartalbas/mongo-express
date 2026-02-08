@@ -2,6 +2,12 @@
 
 {% block title %}Home{% endblock %}
 
+{% block styles %}
+<style>
+  #pageTitle { display: none; }
+</style>
+{% endblock %}
+
 {% block breadcrumb %}
 <li class="nav-item dropdown">
   <a class="nav-link dropdown-toggle" href="#" role="button" aria-controls="navbarDatabaseDropdown" data-bs-target="#navbarDatabaseDropdown" data-bs-toggle="collapse" aria-expanded="false">
@@ -17,53 +23,46 @@
 
 {% block content %}
 <div class="card mb-3">
-  <div class="card-header">
-    <h4 class="d-inline-block">Databases</h4>
-    {% if !settings.read_only %}
-    <form class="form-inline float-end" method="POST">
+  <div class="card-header d-flex align-items-center py-1 px-1">
+    <strong class="ps-2">Databases</strong>
+    {% if not settings.read_only %}
+    <form class="ms-auto d-flex align-items-center gap-2" method="POST">
       <input type="hidden" name="_csrf" value="{{ csrfToken }}">
-      <div class="input-group">
-        <input type="text" class="form-control" id="database" name="database" placeholder="Database name" />
-        <div class="input-group-append">
-          <button type="submit" class="btn btn-primary">
-            <i class="fa fa-plus"></i>
-            Create database
-          </button>
-        </div>
-      </div>
+      <input type="text" class="form-control form-control-sm" id="database" name="database" placeholder="Database name" style="width: 160px;" />
+      <button type="submit" class="btn btn-primary btn-sm text-nowrap" style="min-width:6rem;">
+        <i data-lucide="plus" class="lucide"></i> Create
+      </button>
     </form>
     {% endif %}
   </div>
-  <ul class="list-group list-group-flush">
+  <table class="table table-hover mb-0 align-middle">
+    <tbody>
     {% for db in databases %}
-    <li class="list-group-item p-1">
-      <div class="row">
-        <div class="col-md-2 d-grid">
-          <a href="{{ baseHref }}db/{{ db | url_encode }}/" class="btn btn-success btn-block">
-            <i class="fa fa-eye d-block"></i>View
+      <tr>
+        <td class="p-1" style="width: 1%;">
+          <a href="{{ baseHref }}db/{{ db | url_encode }}/" class="btn btn-success btn-sm text-nowrap d-block text-start">
+            <i data-lucide="eye" class="lucide"></i> {{ db }}
           </a>
-        </div>
-        <div class="col-md-8 d-flex">
-          <h3 class="align-self-center m-0"><a href="{{ baseHref }}db/{{ db | url_encode }}/">{{ db }}</a></h3>
-        </div>
-        {% if !settings.read_only && !settings.no_delete %}
-        <div class="col-md-2 d-grid">
-          <form method="POST" class="d-grid" action="{{ baseHref }}{{ db | url_encode }}">
+        </td>
+        <td class="p-1"></td>
+        {% if not settings.read_only and not settings.no_delete %}
+        <td class="p-1 text-end" style="width: 1%;">
+          <form method="POST" action="{{ baseHref }}{{ db | url_encode }}">
             <input type="hidden" name="_csrf" value="{{ csrfToken }}">
             <input type="hidden" name="_method" value="delete">
-            <button type="submit" class="btn btn-danger btn-block deleteButton" data-database-name="{{ db }}">
-              <i class="fa fa-trash d-block"></i>Delete
+            <button type="submit" class="btn btn-danger btn-sm text-nowrap deleteButton" style="min-width:6rem;" data-database-name="{{ db }}">
+              <i data-lucide="trash-2" class="lucide"></i> Delete
             </button>
           </form>
-        </div>
+        </td>
         {% endif %}
-      </div>
-    </li>
+      </tr>
     {% endfor %}
-  </ul>
+    </tbody>
+  </table>
 </div>
 
-{% if !settings.read_only && !settings.no_delete %}
+{% if not settings.read_only and not settings.no_delete %}
 <div class="modal fade" id="confirm-deletion" tabindex="-1" aria-labelledby="confirmDeletionLabel" aria-hidden="true">
   <div class="modal-dialog">
     <div class="modal-content">
@@ -91,8 +90,9 @@
 
 {% if info != false %}
 <div class="card mb-3">
-  <h4 class="card-header">Server status</h4>
-  <table class="table table-bordered table-striped m-0">
+  <div class="card-header"><strong>Server status</strong></div>
+  <table class="table table-bordered table-striped mb-0">
+    <tbody>
     <tr>
       <td><strong>Hostname</strong></td>
       <td>{{ info.host }}</td>
@@ -101,20 +101,19 @@
     </tr>
     <tr>
       <td><strong>Uptime</strong></td>
-      <td>{{ info.uptime }} seconds {% if info.uptime > 86400 %} ({{ Math.floor( info.uptime/86400 ) }} days) {% endif
+      <td>{{ info.uptime }} seconds {% if info.uptime > 86400 %} ({{ uptimeDays }} days) {% endif
         %}</td>
       <td><strong>Node Version</strong></td>
-      <td>{{ process.versions.node }}</td>
+      <td>{{ nodeVersion }}</td>
     </tr>
     <tr>
       <td><strong>Server Time</strong></td>
       <td>{{ info.localTime|date('r') }}</td>
       <td><strong>V8 Version</strong></td>
-      <td>{{ process.versions.v8 }}</td>
+      <td>{{ v8Version }}</td>
     </tr>
-    <tr>
-      <td colspan="4">&nbsp;</td>
-    </tr>
+    </tbody>
+    <tbody>
     <tr>
       <td><strong>Current Connections</strong></td>
       <td>{{ info.connections.current }}</td>
@@ -139,14 +138,13 @@
       <td><strong>Write Lock Queue</strong></td>
       <td>{{ info.globalLock.currentQueue.writers}}</td>
     </tr>
-    <tr>
-      <td colspan="4">&nbsp;</td>
-    </tr>
+    </tbody>
+    <tbody>
     <tr>
       <td><strong>Disk Flushes</strong></td>
       <td>{{ info.backgroundFlushing.flushes }}</td>
       <td><strong>Last Flush</strong></td>
-      <td>{{ info.backgroundFlushing ? info.backgroundFlushing.last_finished|date('r') : '' }}</td>
+      <td>{{ info.backgroundFlushing.last_finished|date('r') if info.backgroundFlushing }}</td>
     </tr>
     <tr>
       <td><strong>Time Spent Flushing</strong></td>
@@ -154,9 +152,8 @@
       <td><strong>Average Flush Time</strong></td>
       <td>{{ info.backgroundFlushing.average_ms }} ms</td>
     </tr>
-    <tr>
-      <td colspan="4">&nbsp;</td>
-    </tr>
+    </tbody>
+    <tbody>
     <tr>
       <td><strong>Total Inserts</strong></td>
       <td>{{ info.opcounters.insert }}</td>
@@ -169,6 +166,7 @@
       <td><strong>Total Deletes</strong></td>
       <td>{{ info.opcounters.delete}}</td>
     </tr>
+    </tbody>
   </table>
 </div>
 {% endif %}
@@ -181,7 +179,7 @@
 
 
 {% block scripts %}
-{% if !settings.read_only %}
+{% if not settings.read_only %}
 <script src="{{ baseHref }}{{ assets.index.js }}"></script>
 {% endif %}
 {% endblock %}

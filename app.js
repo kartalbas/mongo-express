@@ -3,19 +3,14 @@
 import fs from 'node:fs';
 import https from 'node:https';
 import path from 'node:path';
-import { fileURLToPath } from 'node:url';
 import pico from 'picocolors';
 import { program } from 'commander';
-import csrf from 'csurf';
 import express from 'express';
 import middleware from './lib/middleware.js';
 import { deepmerge } from './lib/utils.js';
 import configDefault from './config.default.js';
 
-// TODO replace with import.meta.dirname if minimum Node.js version is >= 20.11.0
-const __dirname = path.dirname(fileURLToPath(import.meta.url));
-
-const pkg = JSON.parse(fs.readFileSync(path.join(__dirname, './package.json')));
+const pkg = JSON.parse(fs.readFileSync(path.join(import.meta.dirname, './package.json')));
 
 const app = express();
 
@@ -26,7 +21,7 @@ let sslOptions;
 const loadConfig = async () => {
   if (fs.existsSync('./config.js')) {
     try {
-      // eslint-disable-next-line import/no-unresolved
+      // eslint-disable-next-line import-x/no-unresolved
       const { default: configCustom } = await import('./config.js');
       return deepmerge(configDefault, configCustom);
     } catch (error) {
@@ -44,8 +39,6 @@ const loadConfig = async () => {
 async function bootstrap(config) {
   const resolvedMiddleware = await middleware(config);
   app.use(config.site.baseUrl, resolvedMiddleware);
-  app.use(config.site.baseUrl, process.env.NODE_ENV === 'test' ? csrf({ ignoreMethods: ['GET', 'HEAD', 'OPTIONS', 'POST', 'PUT'] })
-    : csrf({ cookie: true }));
 
   if (config.site.sslEnabled) {
     defaultPort = 443;

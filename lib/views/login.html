@@ -1,61 +1,139 @@
 {% extends 'layout.html' %}
 
-{% block title %}Home{% endblock %}
+{% block title %}Connect{% endblock %}
 
-{% block content %}
-<div class="container mt-5">
-    <div class="row justify-content-center">
-        <div class="col-md-6">
-            <div class="card">
-                <div class="card-body">
-                    <h3 class="card-title text-center">Auth</h3>
-                    <form method="POST">
-                        <input type="hidden" name="_csrf" value="{{ csrfToken }}">
-                        <div class="input-group mb-3">
-                            <div class="input-group-prepend">
-                                <span class="input-group-text">Host</span>
-                            </div>
-                            <input type="text" id="hostname" name="hostname" class="form-control" placeholder="Host" value="{{hostname}}" aria-label="Host" required>
-                        </div>
-                        <div class="input-group mb-3">
-                            <div class="input-group-prepend">
-                                <span class="input-group-text">Port</span>
-                            </div>
-                            <input type="text" id="port" name="port" class="form-control" placeholder="Port" value="{{port}}" aria-label="Port" required>
-                        </div>
-                        <div class="input-group mb-3">
-                            <div class="input-group-prepend">
-                                <span class="input-group-text">Auth Source</span>
-                            </div>
-                            <input type="text" id="authSource" name="authSource" class="form-control" placeholder="admin" value="{{authSource}}" aria-label="Auth Source" required>
-                        </div>
-                        <div class="input-group mb-3">
-                            <div class="input-group-prepend">
-                                <span class="input-group-text">Username</span>
-                            </div>
-                            <input type="text" id="username" name="username" class="form-control" placeholder="Username" value="{{username}}" aria-label="Username" required>
-                        </div>
-                        <div class="input-group mb-3">
-                            <div class="input-group-prepend">
-                                <span class="input-group-text">Password</span>
-                            </div>
-                            <input type="password" id="password" name="password" class="form-control" placeholder="Password" value="{{password}}" aria-label="Password" required>
-                            <div class="input-group-append">
-                                <button class="btn btn-outline-secondary" type="button" id="togglePassword"><i class="fa fa-eye"></i></button>
-                            </div>
-                        </div>
-                        <div class="text-center">
-                            <button id="authButton" class="btn btn-primary">Login</button>
-                        </div>
-                    </form>
-                </div>
-            </div>
-        </div>
-    </div>
-</div>
+{% block styles %}
+<style>
+  /* Hide the default page title and container chrome for login */
+  #pageTitle { display: none; }
+
+  .login-wrapper {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    min-height: calc(100vh - 56px);
+    margin-top: -1rem;
+  }
+  .login-card {
+    width: 100%;
+    max-width: 400px;
+    border: none;
+    border-radius: 12px;
+    box-shadow: 0 4px 24px rgba(0, 0, 0, 0.25);
+  }
+  [data-bs-theme=dark] .login-card {
+    box-shadow: 0 4px 24px rgba(0, 0, 0, 0.5);
+    background-color: #22252b;
+  }
+  .login-card .card-body {
+    padding: 2rem 1.75rem;
+  }
+  .login-logo {
+    width: 48px;
+    height: 48px;
+  }
+  .login-brand {
+    font-size: 1.25rem;
+    font-weight: 600;
+    margin-top: 0.5rem;
+    margin-bottom: 0;
+  }
+  .login-section-label {
+    font-size: 0.7rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: #888;
+    margin-bottom: 0.5rem;
+    margin-top: 1.25rem;
+  }
+  .login-section-label:first-of-type {
+    margin-top: 1.5rem;
+  }
+  .login-card .form-label {
+    font-size: 0.8rem;
+    font-weight: 500;
+    margin-bottom: 0.25rem;
+  }
+  .login-card .form-control {
+    font-size: 0.85rem;
+    padding: 0.45rem 0.65rem;
+    border-radius: 6px;
+  }
+  .login-card .form-control::placeholder {
+    color: #666;
+    opacity: 0.5;
+    font-style: italic;
+  }
+  .login-card .btn-connect {
+    font-size: 0.9rem;
+    padding: 0.55rem;
+    border-radius: 8px;
+    font-weight: 600;
+    letter-spacing: 0.02em;
+    margin-top: 1.5rem;
+  }
+  .host-port-row {
+    display: grid;
+    grid-template-columns: 1fr 100px;
+    gap: 0.75rem;
+  }
+</style>
 {% endblock %}
 
+{% block content %}
+<div class="login-wrapper">
+  <div class="card login-card">
+    <div class="card-body">
+      <div class="text-center">
+        <img src="{{ baseHref }}public/img/mongo-express-logo.png" class="login-logo" alt="Mongo Express" />
+        <p class="login-brand">Mongo Express</p>
+      </div>
 
-{% block scripts %}
-<script src="{{ baseHref }}{{ assets.login.js }}"></script>
+      <form method="POST">
+        <input type="hidden" name="_csrf" value="{{ csrfToken }}">
+
+        <div class="login-section-label">Connection</div>
+
+        <div class="host-port-row">
+          <div>
+            <label for="hostname" class="form-label">Host</label>
+            <input type="text" id="hostname" name="hostname" class="form-control" value="{{ hostname }}" placeholder="localhost" required>
+          </div>
+          <div>
+            <label for="port" class="form-label">Port</label>
+            <input type="text" id="port" name="port" class="form-control" value="{{ port }}" placeholder="27017" required>
+          </div>
+        </div>
+
+        <div class="mt-2">
+          <label for="authSource" class="form-label">Auth Source</label>
+          <input type="text" id="authSource" name="authSource" class="form-control" value="{{ authSource }}" placeholder="admin" required>
+        </div>
+
+        <div class="login-section-label">Credentials</div>
+
+        <div class="mb-2">
+          <label for="username" class="form-label">Username</label>
+          <input type="text" id="username" name="username" class="form-control" value="{{ username }}" placeholder="Username" required>
+        </div>
+
+        <div x-data="{ show: false }">
+          <label for="password" class="form-label">Password</label>
+          <div class="input-group">
+            <input :type="show ? 'text' : 'password'" id="password" name="password" class="form-control" value="{{ password }}" placeholder="Password" required>
+            <button class="btn btn-outline-secondary" type="button" @click="show = !show" tabindex="-1">
+              <i data-lucide="eye" x-show="!show" class="lucide"></i>
+              <i data-lucide="eye-off" x-show="show" class="lucide"></i>
+            </button>
+          </div>
+        </div>
+
+        <button id="authButton" class="btn btn-primary btn-connect w-100" type="submit">
+          Connect
+        </button>
+      </form>
+    </div>
+  </div>
+</div>
 {% endblock %}

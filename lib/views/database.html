@@ -2,6 +2,12 @@
 
 {% block title %}{{ dbName }}{% endblock %}
 
+{% block styles %}
+<style>
+  #pageTitle { display: none; }
+</style>
+{% endblock %}
+
 {% block breadcrumb %}
 <li class="nav-item">
   <a class="nav-link px-1" href="{{ dbUrl }}">Database:</a>
@@ -20,72 +26,63 @@
 
 {% block content %}
 <div class="card mb-3">
-  <div class="card-header">
-    <h4 class="d-inline-block">Collections</h4>
-    {% if !settings.read_only %}
-    <form class="form-inline float-end" method="POST">
+  <div class="card-header d-flex align-items-center py-1 px-1">
+    <strong class="ps-2">Collections</strong>
+    {% if not settings.read_only %}
+    <form class="ms-auto d-flex align-items-center gap-2" method="POST">
       <input type="hidden" name="_csrf" value="{{ csrfToken }}">
-      <div class="input-group">
-        <input type="text" class="form-control" id="collection" name="collection" placeholder="Collection name" />
-        <div class="input-group-append">
-          <button type="submit" class="btn btn-primary">
-            <i class="fa fa-plus"></i>
-            Create collection
-          </button>
-        </div>
-      </div>
+      <input type="text" class="form-control form-control-sm" id="collection" name="collection" placeholder="Collection name" style="width: 160px;" />
+      <button type="submit" class="btn btn-primary btn-sm text-nowrap" style="min-width:6rem;">
+        <i data-lucide="plus" class="lucide"></i> Create
+      </button>
     </form>
     {% endif %}
   </div>
-  <ul class="list-group list-group-flush">
+  <table class="table table-hover mb-0 align-middle">
+    <tbody>
     {% for c in colls %}
-    <li class="list-group-item p-1">
-      <div class="row row-cols-md-auto row-cols-1 m-0">
-        <div class="col px-0 px-md-1 py-1 py-md-0 d-grid">
-          <a href="{{ dbUrl }}/{{ c | url_encode }}" class="btn btn-success btn-block">
-            <i class="fa fa-eye d-block"></i>View
+      <tr>
+        <td class="p-1" style="width: 1%;">
+          <a href="{{ dbUrl }}/{{ c | url_encode }}" class="btn btn-success btn-sm text-nowrap d-block text-start">
+            <i data-lucide="eye" class="lucide"></i> {{ c }}
           </a>
-        </div>
-        {% if !settings.me_no_export %}
-        <div class="col px-0 px-md-1 py-1 py-md-0 d-grid" >
-          <a href="{{ dbUrl }}/export/{{ c | url_encode }}" class="btn btn-warning btn-block text-white">
-            <i class="fa fa-download d-block"></i>Export
-          </a>
-        </div>
-        {% endif %}
-        <div class="col px-0 px-md-1 py-1 py-md-0 d-grid">
-          <a href="{{ dbUrl }}/expArr/{{ c | url_encode }}" class="btn btn-warning btn-block text-white">
-            <i class="fa fa-download d-block"></i>[JSON]
-          </a>
-        </div>
-        <div class="col px-0 px-md-1 py-1 py-md-0 d-grid">
-          <a class="btn btn-warning btn-block text-white import-file-link">
-            <i class="fa fa-upload d-block"></i>Import
-          </a>
+        </td>
+        <td class="p-1"></td>
+        <td class="p-1 text-nowrap" style="width: 1%;">
+          <div class="btn-group btn-group-sm">
+            {% if not settings.me_no_export %}
+            <a href="{{ dbUrl }}/export/{{ c | url_encode }}" class="btn btn-outline-secondary" title="Export collection">
+              <i data-lucide="download" class="lucide"></i> Export
+            </a>
+            {% endif %}
+            <a href="{{ dbUrl }}/expArr/{{ c | url_encode }}" class="btn btn-outline-secondary" title="Export as JSON array">
+              <i data-lucide="download" class="lucide"></i> JSON
+            </a>
+            <a class="btn btn-outline-secondary import-file-link" title="Import collection">
+              <i data-lucide="upload" class="lucide"></i> Import
+            </a>
+          </div>
           <input class="d-none import-input-file" type="file" name="import-file"
             data-collection-name="{{ c | url_encode }}" />
-        </div>
-        <div class="col-md-5 px-0 px-md-1 py-1 py-md-0 d-grid">
-          <h3 class="align-self-center m-0"><a href="{{ dbUrl }}/{{ c | url_encode }}">{{ c }}</a></h3>
-        </div>
-        {% if !settings.read_only && !settings.no_delete %}
-        <div class="col px-0 px-md-1 py-1 py-md-0 d-grid ms-auto">
-          <form method="POST" class="d-grid" action="{{ dbUrl }}/{{ c | url_encode }}">
+        </td>
+        {% if not settings.read_only and not settings.no_delete %}
+        <td class="p-1 text-end" style="width: 1%;">
+          <form method="POST" action="{{ dbUrl }}/{{ c | url_encode }}">
             <input type="hidden" name="_csrf" value="{{ csrfToken }}">
             <input type="hidden" name="_method" value="delete">
-            <button type="submit" class="btn btn-danger btn-block deleteButton" data-collection-name="{{ c }}">
-              <i class="fa fa-trash d-block"></i>Delete
+            <button type="submit" class="btn btn-danger btn-sm text-nowrap deleteButton" data-collection-name="{{ c }}">
+              <i data-lucide="trash-2" class="lucide"></i> Delete
             </button>
           </form>
-        </div>
+        </td>
         {% endif %}
-      </div>
-    </li>
+      </tr>
     {% endfor %}
-  </ul>
+    </tbody>
+  </table>
 </div>
 
-{% if !settings.read_only && !settings.no_delete %}
+{% if not settings.read_only and not settings.no_delete %}
 <div class="modal fade" id="confirm-deletion" tabindex="-1" aria-hidden="true">
   <div class="modal-dialog">
     <div class="modal-content">
@@ -112,30 +109,33 @@
 </div>
 {% endif %}
 
-{% if grids.length && settings.gridFSEnabled %}
-<h2>GridFS Buckets</h2>
-
-<table class="table table-bordered table-striped table-condensed">
-  {% for b in grids %}
-  <tr>
-    <td class="col-md-2">
-      <a href="{{ dbUrl }}/gridFS/{{ b }}" class="btn btn-success btn-block">
-        <i class="fa fa-eye d-block"></i>View
-      </a>
-    </td>
-    <td>
-      <h3><a href="{{ dbUrl }}/gridFS/{{ b }}">{{ b }}</a></h3>
-    </td>
-  </tr>
-  {% endfor %}
-</table>
+{% if grids.length and settings.gridFSEnabled %}
+<div class="card mb-3">
+  <div class="card-header d-flex align-items-center py-1 px-1">
+    <strong class="ps-2">GridFS Buckets</strong>
+  </div>
+  <table class="table table-hover mb-0 align-middle">
+    <tbody>
+    {% for b in grids %}
+      <tr>
+        <td class="p-1" style="width: 1%;">
+          <a href="{{ dbUrl }}/gridFS/{{ b }}" class="btn btn-success btn-sm text-nowrap d-block text-start">
+            <i data-lucide="eye" class="lucide"></i> {{ b }}
+          </a>
+        </td>
+        <td class="p-1"></td>
+      </tr>
+    {% endfor %}
+    </tbody>
+  </table>
+</div>
 {% endif %}
 
 
 {% if stats != false %}
 <div class="card mb-3">
-  <h4 class="card-header">Database stats</h4>
-  <table class="table table-bordered table-striped m-0">
+  <div class="card-header"><strong>Database stats</strong></div>
+  <table class="table table-bordered table-striped mb-0">
     <tr>
       <td><strong>Collections (incl. system.namespaces)</strong></td>
       <td>{{ stats.collections }}</td>
@@ -203,7 +203,7 @@
 {% endblock %}
 
 {% block scripts %}
-{% if !settings.read_only %}
+{% if not settings.read_only %}
 <script src="{{ baseHref }}{{ assets.database.js }}"></script>
 {% endif %}
 {% endblock %}

@@ -4,8 +4,8 @@
 
 
 {% block styles %}
-
   <style type="text/css">
+    #pageTitle { display: none; }
     .CodeMirror-scroll {
       height: auto;
       overflow-y: hidden;
@@ -58,7 +58,7 @@
   id="documentEditForm"
   action="{{ collectionUrl }}/{{ document._id | json | safe | url_encode }}?subtype={{ document._id.sub_type }}&skip={{skip}}"
 >
-{% elseif document._id._bsontype == 'Long' %}
+{% elif document._id._bsontype == 'Long' %}
 <form method="POST"
   id="documentEditForm"
   action="{{ collectionUrl }}/{{ document._id | longToString | safe | url_encode }}?skip={{skip}}"
@@ -70,67 +70,54 @@
 >
 {% endif %}
   <input type="hidden" name="_csrf" value="{{ csrfToken }}">
+  <input type="hidden" name="_method" value="put">
   {% if docLength > 10 %}
-    <div>
-      {% if !settings.read_only %}
-        <input type="hidden" name="_method" value="put">
-        <button onclick="return onBackClick()" class="backButton btn btn-warning btn-large">
-         <i class="fa fa-arrow-left"></i>
-          Back
+    <div class="d-flex align-items-center mb-3">
+      {% if not settings.read_only %}
+        <button onclick="return onBackClick()" class="backButton btn btn-outline-secondary btn-sm">
+          <i data-lucide="arrow-left" class="lucide"></i> Back
         </button>
-        <button type="submit" class="btn btn-success btn-large float-end" onclick="return onSubmitClick()">
-          <i class="fa fa-save"></i>
-          Save
+        <button type="submit" class="btn btn-success btn-sm ms-auto" onclick="return onSubmitClick()">
+          <i data-lucide="save" class="lucide"></i> Save
         </button>
       {% else %}
-        <button onclick="return history.back()" class="btn btn-warning btn-large btn-block">
-          <i class="fa fa-arrow-left"></i>
-          Back
+        <button onclick="return history.back()" class="btn btn-outline-secondary btn-sm">
+          <i data-lucide="arrow-left" class="lucide"></i> Back
         </button>
       {% endif %}
     </div>
-  <br />
   {% endif %}
 
   <textarea class="col-md-12" id="document" name="document"{% if settings.read_only %} readonly="readonly"{% endif %}>{{ docString }}</textarea>
-  <br />
 
-  <div>
-    {% if !settings.read_only %}
-      <input type="hidden" name="_method" value="put">
-      <button onclick="return onBackClick()" class="backButton btn btn-warning btn-large">
-        <i class="fa fa-arrow-left"></i>
-        Back
+  <div class="d-flex align-items-center mt-3">
+    {% if not settings.read_only %}
+      <button onclick="return onBackClick()" class="backButton btn btn-outline-secondary btn-sm">
+        <i data-lucide="arrow-left" class="lucide"></i> Back
       </button>
-
-      <button type="submit" class="btn btn-success btn-large float-end" onclick="return onSubmitClick()">
-        <i class="fa fa-save"></i>
-        Save
+      <button type="submit" class="btn btn-success btn-sm ms-auto" onclick="return onSubmitClick()">
+        <i data-lucide="save" class="lucide"></i> Save
       </button>
     {% else %}
-      <button onclick="return history.back()" class="btn btn-warning btn-large btn-block">
-        <i class="fa fa-arrow-left"></i>
-        Back
+      <button onclick="return history.back()" class="btn btn-outline-secondary btn-sm">
+        <i data-lucide="arrow-left" class="lucide"></i> Back
       </button>
     {% endif %}
   </div>
 </form>
 
-{% if !settings.read_only && !settings.no_delete %}
-  <br>
-
+{% if not settings.read_only and not settings.no_delete %}
   {% if document._id._bsontype == 'Binary' %}
-  <form method="POST" action="{{ collectionUrl }}/{{ document._id | json | safe | url_encode }}?subtype={{ document._id.sub_type }}">
-  {% elseif document._id._bsontype == 'Long' %}
-  <form method="POST" action="{{ collectionUrl }}/{{ document._id | longToString | safe | url_encode }}">
+  <form method="POST" class="mt-3" action="{{ collectionUrl }}/{{ document._id | json | safe | url_encode }}?subtype={{ document._id.sub_type }}">
+  {% elif document._id._bsontype == 'Long' %}
+  <form method="POST" class="mt-3" action="{{ collectionUrl }}/{{ document._id | longToString | safe | url_encode }}">
   {% else %}
-  <form method="POST" action="{{ collectionUrl }}/{{ document._id | json | safe | url_encode }}">
+  <form method="POST" class="mt-3" action="{{ collectionUrl }}/{{ document._id | json | safe | url_encode }}">
   {% endif %}
     <input type="hidden" name="_csrf" value="{{ csrfToken }}">
     <input type="hidden" name="_method" value="delete">
-    <button type="submit" class="btn btn-danger deleteButtonDocument">
-      <i class="fa fa-trash"></i>
-      Delete
+    <button type="submit" class="btn btn-outline-danger btn-sm deleteButtonDocument">
+      <i data-lucide="trash-2" class="lucide"></i> Delete
     </button>
   </form>
 
@@ -141,13 +128,12 @@
           Are you sure?
         </div>
         <div class="modal-footer">
-          <button type="button" data-dismiss="modal" class="btn btn-danger" id="delete">Delete</button>
-          <button type="button" data-dismiss="modal" class="btn">Cancel</button>
+          <button type="button" data-bs-dismiss="modal" class="btn btn-danger" id="delete">Delete</button>
+          <button type="button" data-bs-dismiss="modal" class="btn">Cancel</button>
         </div>
       </div>
     </div>
   </div>
-
 {% endif %}
 
 {% endblock %}

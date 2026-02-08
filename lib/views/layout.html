@@ -9,8 +9,6 @@
 
   <link href="{{ baseHref }}public/css/style.css" rel="stylesheet" />
 
-  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css">
-
   <link rel="prefetch" href="{{ baseHref }}public/img/gears.gif">
 
   {% block styles %}{% endblock %}
@@ -33,16 +31,13 @@
         {% block breadcrumb %}
         {% endblock %}
       </ul>
-      <div class="dark-mode-toggle">
-        <i id="darkModeIcon" class="fa fa-moon"></i>
+      <div class="dark-mode-toggle" x-data="darkMode" @click="toggle()" style="cursor:pointer;">
+        <i data-lucide="moon" x-show="!isDark" class="lucide"></i>
+        <i data-lucide="sun" x-show="isDark" class="lucide"></i>
       </div>
-      {% if enableLogout %}
-      <div class="logout">
-        <a href="{{ baseHref }}logout" class="btn">
-          <i class="fas fa-sign-out-alt"></i>
-        </a>
-      </div>
-      {% endif %}
+      <a href="{{ baseHref }}disconnect" class="btn btn-sm text-nowrap ms-2" title="Disconnect">
+        <i data-lucide="log-out" class="lucide"></i>
+      </a>
     </div>
   </div>
 </nav>
@@ -78,12 +73,12 @@
 <script type="text/javascript">
 
   globalThis.ME_SETTINGS = {
-    readOnly: '{{ !!settings.read_only }}' === 'true',
-    noDelete: '{{ !!settings.no_delete }}' === 'true',
+    readOnly: '{{ 'true' if settings.read_only else 'false' }}' === 'true',
+    noDelete: '{{ 'true' if settings.no_delete else 'false' }}' === 'true',
     baseHref: '{{ baseHref }}',
-    collapsibleJSON: '{{ !!settings.me_collapsible_json }}' === 'true',
-    collapsibleJSONDefaultUnfold: Number.parseInt('{{ settings.me_collapsible_json_default_unfold || 0}}', 10),
-    confirmDelete: '{{ !!settings.me_confirm_delete }}' === 'true',
+    collapsibleJSON: '{{ 'true' if settings.me_collapsible_json else 'false' }}' === 'true',
+    collapsibleJSONDefaultUnfold: Number.parseInt('{{ settings.me_collapsible_json_default_unfold or 0}}', 10),
+    confirmDelete: '{{ 'true' if settings.me_confirm_delete else 'false' }}' === 'true',
     dbName: '{{ dbName | url_encode }}',
     collectionName: '{{ collectionName | url_encode }}',
     bucketName: '{{ bucketName }}',

@@ -2,6 +2,12 @@
 
 {% block title %}{{ collectionName }}{% endblock %}
 
+{% block styles %}
+<style>
+  #pageTitle { display: none; }
+</style>
+{% endblock %}
+
 {% block breadcrumb %}
 <li class="nav-item">
   <a class="nav-link px-1" href="{{ dbUrl }}">Database:</a>
@@ -32,106 +38,107 @@
 {% endblock %}
 
 {% block content %}
-{% if !settings.read_only %}
-<div class="btn-toolbar my-3" role="toolbar">
-  <button type="button" data-bs-toggle="modal" data-bs-target="#addDocument" class="btn btn-success btn-large me-1 m-1">
-    <i class="fas fa-plus"></i>
-    New Document
+<div class="d-flex align-items-center gap-2 mb-3">
+  {% if not settings.read_only %}
+  <button type="button" data-bs-toggle="modal" data-bs-target="#addDocument" class="btn btn-success btn-sm">
+    <i data-lucide="plus" class="lucide"></i> New Document
   </button>
-  <button type="button" data-bs-toggle="modal" data-bs-target="#addIndex" class="btn btn-success btn-large m-1">
-    <i class="fas fa-plus"></i>
-    New Index
+  <button type="button" data-bs-toggle="modal" data-bs-target="#addIndex" class="btn btn-outline-secondary btn-sm">
+    <i data-lucide="plus" class="lucide"></i> New Index
   </button>
+  {% endif %}
+  {% if not settings.read_only and not settings.no_delete and count > 0 %}
+  <form id="deleteListForm" method="POST" class="ms-auto"
+    action="{{ collectionUrl }}?key={{ key }}&value={{ value }}&type={{ type }}&query={{ query|default('{}') }}&projection={{ projection }}&runAggregate={{ runAggregate }}">
+    <input type="hidden" name="_csrf" value="{{ csrfToken }}">
+    <input type="hidden" name="_method" value="delete">
+    <button type="button" data-bs-toggle="modal" data-bs-target="#deleteListModal" class="btn btn-outline-danger btn-sm">
+      <i data-lucide="trash-2" class="lucide"></i>
+      Delete all {{ count }} results
+    </button>
+  </form>
+  {% endif %}
 </div>
-{% endif %}
 
-<ul id="tabs" class="nav nav-pills nav-fill" role="tablist">
-  <li class="nav-item">
-    <a href="#simple" class="nav-link active" data-bs-toggle="tab"><i class="fa fa-tag"></i> Simple</a>
-  </li>
-  <li class="nav-item">
-    <a href="#advanced" class="nav-link" data-bs-toggle="tab"><i class="fa fa-tag"></i> Advanced</a>
-  </li>
-</ul>
-<div id="my-tab-content" class="tab-content p-3">
-  <div class="tab-pane active" id="simple">
-    <form method="get" action="{{ collectionUrl }}">
-      {% for column in columns %}
-      <input type="checkbox" name="sort[{{column}}]" class="d-none sort-{{column}}" {% if sort[column]
-        %}value="{{sort[column]}}" checked="checked" {% endif %} />
-      {% endfor %}
-      <div class="row">
-        <div class="col-sm-6 col-md-4 py-1">
-          <input style="width:100%;" class="input-medium form-control" type="text" id="key" name="key" placeholder="Key"
-            title="Key" value="{{ key }}">
-        </div>
-        <div class="col-sm-6 col-md-4 py-1">
-          <input style="width:100%;" class="input-medium form-control" type="text" id="value" name="value"
-            placeholder="Value" title="Value" value="{{ value }}">
-        </div>
-        <div class="col-sm-6 col-md-2 py-1">
-          <select name="type" class="form-control">
-            <option value="S" {% if type=='S' %}selected {% endif %}>String</option>
-            <option value="R" {% if type=='R' %}selected {% endif %}>Regex</option>
-            <option value="J" {% if type=='J' %}selected {% endif %}>JSON, bool</option>
-            <option value="N" {% if type=='N' %}selected {% endif %}>Number</option>
-            <option value="O" {% if type=='O' %}selected {% endif %}>ObjectId</option>
-            <option value="U" {% if type=='U' %}selected {% endif %}>UUID (v4)</option>
-          </select>
-        </div>
-        <div class="col-sm-6 col-md-2 d-grid py-1">
-          <button type="submit" class="btn btn-primary btn-block">
-            <i class="fa fa-search"></i>
-            Find
-          </button>
-        </div>
-      </div>
-    </form>
+<div class="card mb-3">
+  <div class="card-header py-1 px-2">
+    <ul id="tabs" class="nav nav-tabs card-header-tabs" role="tablist" style="margin-bottom: -1px;">
+      <li class="nav-item">
+        <a href="#simple" class="nav-link active py-1 px-3" data-bs-toggle="tab" style="font-size: 0.8125rem;">Simple</a>
+      </li>
+      <li class="nav-item">
+        <a href="#advanced" class="nav-link py-1 px-3" data-bs-toggle="tab" style="font-size: 0.8125rem;">Advanced</a>
+      </li>
+    </ul>
   </div>
-  <div class="tab-pane" id="advanced">
-    <form method="get" action="{{ collectionUrl }}">
-      {% for column in columns %}
-      <input type="checkbox" name="sort[{{column}}]" class="d-none sort-{{column}}" {% if sort[column]
-        %}value="{{sort[column]}}" checked="checked" {% endif %} />
-      {% endfor %}
-      <div class="row">
-        <div class="col-sm-6 col-md-5 py-1">
-          <textarea class="input-medium form-control" style="width: 100%; height: 150px" id="query" name="query"
-            placeholder="Query" title="Query">{{ query }}</textarea>
-        </div>
-        <div class="col-sm-6 col-md-5 py-1">
-          <textarea class="input-medium form-control" style="width: 100%; height: 150px" id="projection"
-            name="projection" placeholder="Projection" title="Projection">{{ projection }}</textarea>
-        </div>
-        <div class="col-md-2 d-grid py-1">
-          <div class="form-check">
-            <input type="checkbox" class="form-check-input" id="runAggregate" name="runAggregate" title="Run Aggregate"
-              {% if runAggregate %} checked="checked" {% endif %}>
-            <label class="form-check-label" for="runAggregate">Aggregate query</label>
+  <div class="card-body py-2 px-2">
+    <div id="my-tab-content" class="tab-content">
+      <div class="tab-pane active" id="simple">
+        <form method="get" action="{{ collectionUrl }}">
+          {% for column in columns %}
+          <input type="checkbox" name="sort[{{column}}]" class="d-none sort-{{column}}" {% if sort[column]
+            %}value="{{sort[column]}}" checked="checked" {% endif %} />
+          {% endfor %}
+          <div class="row g-2 align-items-end">
+            <div class="col-sm-6 col-md-4">
+              <input class="form-control form-control-sm" type="text" id="key" name="key" placeholder="Key"
+                title="Key" value="{{ key }}">
+            </div>
+            <div class="col-sm-6 col-md-4">
+              <input class="form-control form-control-sm" type="text" id="value" name="value"
+                placeholder="Value" title="Value" value="{{ value }}">
+            </div>
+            <div class="col-sm-6 col-md-2">
+              <select name="type" class="form-control form-control-sm">
+                <option value="S" {% if type=='S' %}selected {% endif %}>String</option>
+                <option value="R" {% if type=='R' %}selected {% endif %}>Regex</option>
+                <option value="J" {% if type=='J' %}selected {% endif %}>JSON, bool</option>
+                <option value="N" {% if type=='N' %}selected {% endif %}>Number</option>
+                <option value="O" {% if type=='O' %}selected {% endif %}>ObjectId</option>
+                <option value="U" {% if type=='U' %}selected {% endif %}>UUID (v4)</option>
+              </select>
+            </div>
+            <div class="col-sm-6 col-md-2 d-grid">
+              <button type="submit" class="btn btn-primary btn-sm">
+                <i data-lucide="search" class="lucide"></i> Find
+              </button>
+            </div>
           </div>
-          <button type="submit" class="btn btn-primary btn-block">
-            <i class="fa fa-search"></i>
-            Find
-          </button>
-        </div>
+        </form>
       </div>
-    </form>
+      <div class="tab-pane" id="advanced">
+        <form method="get" action="{{ collectionUrl }}">
+          {% for column in columns %}
+          <input type="checkbox" name="sort[{{column}}]" class="d-none sort-{{column}}" {% if sort[column]
+            %}value="{{sort[column]}}" checked="checked" {% endif %} />
+          {% endfor %}
+          <div class="row g-2">
+            <div class="col-sm-6 col-md-5">
+              <textarea class="form-control form-control-sm" style="height: 120px" id="query" name="query"
+                placeholder="Query" title="Query">{{ query }}</textarea>
+            </div>
+            <div class="col-sm-6 col-md-5">
+              <textarea class="form-control form-control-sm" style="height: 120px" id="projection"
+                name="projection" placeholder="Projection" title="Projection">{{ projection }}</textarea>
+            </div>
+            <div class="col-md-2">
+              <div class="form-check mb-2">
+                <input type="checkbox" class="form-check-input" id="runAggregate" name="runAggregate" title="Run Aggregate"
+                  {% if runAggregate %} checked="checked" {% endif %}>
+                <label class="form-check-label" for="runAggregate" style="font-size: 0.8125rem;">Aggregate</label>
+              </div>
+              <div class="d-grid">
+                <button type="submit" class="btn btn-primary btn-sm">
+                  <i data-lucide="search" class="lucide"></i> Find
+                </button>
+              </div>
+            </div>
+          </div>
+        </form>
+      </div>
+    </div>
   </div>
 </div>
-{% if !settings.read_only && !settings.no_delete && count > 0 %}
-<form id="deleteListForm" method="POST" class="my-3"
-  action="{{ collectionUrl }}?key={{ key }}&value={{ value }}&type={{ type }}&query={{ query|default('{}') }}&projection={{ projection }}&runAggregate={{ runAggregate }}">
-  {# Router is smart enough to transform method=POST + _method=delete into actual HTTP DELETE, which is what we want
-  #}
-  <input type="hidden" name="_csrf" value="{{ csrfToken }}">
-  <input type="hidden" name="_method" value="delete">
-  <button type="button" data-bs-toggle="modal" data-bs-target="#deleteListModal" class="btn btn-danger btn-large btn-block">
-    <i class="fa fa-trash"></i>
-    Delete all {{count}} documents retrieved
-  </button>
-</form>
-{% endif %}
-<br />
 
 <!-- Add Document Modal -->
 <div class="modal fade" id="addDocument" tabindex="-1" aria-hidden="true">
@@ -150,7 +157,7 @@
         </div>
         <div class="modal-footer">
           <button type="submit" class="btn btn-success" onclick="return checkValidJSON({{ csrfToken }})">
-            <i class="fa fa-save"></i>
+            <i data-lucide="save" class="lucide"></i>
             Save
           </button>
         </div>
@@ -181,7 +188,7 @@
         </div>
         <div class="modal-footer">
           <button type="submit" class="btn btn-success" onclick="return checkValidIndexJSON()">
-            <i class="fa fa-save"></i>
+            <i data-lucide="save" class="lucide"></i>
             Save
           </button>
         </div>
@@ -192,7 +199,7 @@
 <!-- End Add Index Modal -->
 
 {% if documents.length == 0 %}
-<p class="card">
+<p class="card p-3 mb-0">
   No documents found.
 </p>
 {% else %}
@@ -200,7 +207,7 @@
 {% if pagination %}
 <nav class="navbar" aria-label="Page navigation">
   <div class="nav navbar-nav mx-auto">
-    <div id="paginator-top"></div>
+    <div id="paginator"></div>
   </div>
 </nav>
 {% endif %}
@@ -210,43 +217,46 @@
 <div class="table-responsive tableWrapper">
   <table class="table table-striped tableHeaderFooterBars">
     <thead>
+      <tr>
       {% for column in columns %}
       <th class="sorting-button" data-column="{{column}}" data-direction="{{sort[column]}}" title="Sort by {{column}}">
         {{column}}
         {% if sort[column] == 1 %}
-        <i class="fas fa-sort-up"></i>
-        {% elseif sort[column] == -1 %}
-        <i class="fas fa-sort-down"></i>
+        <i data-lucide="chevron-up" class="lucide"></i>
+        {% elif sort[column] == -1 %}
+        <i data-lucide="chevron-down" class="lucide"></i>
         {% endif %}
       </th>
       {% endfor %}
+      </tr>
     </thead>
-    {% for index, document in docs %}
+    <tbody>
+    {% for document in docs %}
     {% if document._id._bsontype == 'Binary' %}
-    <tr id="doc-{{ index }}"
+    <tr id="doc-{{ loop.index0 }}"
       onclick="loadDocument('{{ collectionUrl }}/{{ document._id | json | safe | url_encode }}?subtype={{ document._id.sub_type }}&skip={{skip}}')">
-      {% elseif document._id._bsontype == 'Long' %}
-    <tr id="doc-{{ index }}"
+      {% elif document._id._bsontype == 'Long' %}
+    <tr id="doc-{{ loop.index0 }}"
       onclick="loadDocument('{{ collectionUrl }}/{{ document._id | longToString | safe | url_encode }}?skip={{skip}}')">
       {% else %}
-    <tr id="doc-{{ index }}"
+    <tr id="doc-{{ loop.index0 }}"
       onclick="loadDocument('{{ collectionUrl }}/{{ document._id | json | safe | url_encode }}?skip={{skip}}')">
       {% endif %}
       {% for column in columns %}
       <td>
         <div class="tableContent">
-          {% if !settings.read_only && !settings.no_delete && column === '_id' && collectionName !== 'system.indexes'
+          {% if not settings.read_only and not settings.no_delete and column == '_id' and collectionName != 'system.indexes'
           %}
-          <button class="btn btn-info"
+          <button class="btn btn-info btn-sm"
             onclick="loadDocument('{{ collectionUrl }}/{{ document._id | json | safe | url_encode }}')">
-            <i class="fa fa-link"></i>
+            <i data-lucide="link" class="lucide"></i>
           </button>
           <form class="deleteButtonDocument" method="POST" style="display:inline;"
             action="{{ collectionUrl }}/{{ document._id | json | safe | url_encode }}?subtype={{ document._id.sub_type }}&skip={{ skip }}&key={{ key }}&value={{ value }}&type={{ type }}&query={{ query }}&projection= {{ projection }}">
             <input type="hidden" name="_method" value="delete">
             <input type="hidden" name="_csrf" value="{{ csrfToken }}">
-            <button type="submit" class="btn btn-danger">
-              <i class="fa fa-trash"></i>
+            <button type="submit" class="btn btn-danger btn-sm">
+              <i data-lucide="trash-2" class="lucide"></i>
             </button>
           </form>
           {% endif %}
@@ -260,6 +270,7 @@
       {% endfor %}
     </tr>
     {% endfor %}
+    </tbody>
   </table>
 </div>
 </div>
@@ -274,96 +285,70 @@
 
 {% endif %}
 
-{% if !settings.read_only %}
+{% if not settings.read_only %}
 <div class="card mb-3">
-  <h2 class="card-header">Rename Collection</h2>
-  <div class="card-body">
-    <form method="POST" action="{{ collectionUrl }}" class="form-inline">
+  <div class="card-header py-1 px-2"><strong>Rename Collection</strong></div>
+  <div class="card-body py-2 px-2">
+    <form method="POST" action="{{ collectionUrl }}" class="d-flex align-items-center gap-2">
       <input type="hidden" name="_csrf" value="{{ csrfToken }}">
       <input type="hidden" name="_method" value="put">
-      <div class="input-group">
-        <div class="input-group-prepend">
-          <span class="input-group-text">{{ dbName }} . </span>
-        </div>
-        <input type="text" class="form-control" id="collection" name="collection" placeholder="{{ collectionName }}">
-        <div class="input-group-append">
-          <button class="btn btn-primary" type="button">
-            <i class="fa fa-pen"></i>
-            Rename
-          </button>
-        </div>
-      </div>
+      <span class="text-muted text-nowrap" style="font-size: 0.8125rem;">{{ dbName }} .</span>
+      <input type="text" class="form-control form-control-sm" id="collection" name="collection" placeholder="{{ collectionName }}">
+      <button class="btn btn-primary btn-sm text-nowrap" type="submit">
+        <i data-lucide="pencil" class="lucide"></i> Rename
+      </button>
     </form>
   </div>
 </div>
 {% endif %}
 
 <div class="card mb-3">
-  <h2 class="card-header">Tools</h2>
-  <div class="card-body">
-    <div class="row">
-      {% if !settings.me_no_export %}
-      <div class="col-sm-4 p-2 d-grid ">
-        <a href="{{ dbUrl }}/export/{{ collectionName | url_encode }}?key={{ key }}&value={{ value }}&type={{ type }}&query={{ query | url_encode }}&projection= {{ projection | url_encode }}{% for k, v in sort %}&sort[{{ k }}]={{ v }}{% endfor %}"
-          class="btn btn-warning btn-block text-white">
-          <i class="fa fa-download d-block"></i>Export Standard
-        </a>
-      </div>
-
-      <div class="col-sm-4 p-2 d-grid ">
-        <a href="{{ dbUrl }}/expArr/{{ collectionName | url_encode }}?key={{ key }}&value={{ value }}&type={{ type }}&query={{ query | url_encode }}&projection= {{ projection | url_encode }}{% for k, v in sort %}&sort[{{ k }}]={{ v }}{% endfor %}"
-          class="btn btn-warning btn-block text-white">
-          <i class="fa fa-download d-block"></i>Export --jsonArray
-        </a>
-      </div>
-
-      <div class="col-sm-4 p-2 d-grid ">
-        <a href="{{ dbUrl }}/expCsv/{{ collectionName | url_encode }}?key={{ key }}&value={{ value }}&type={{ type }}&query={{ query | url_encode }}&projection= {{ projection | url_encode }}{% for k, v in sort %}&sort[{{ k }}]={{ v }}{% endfor %}"
-          class="btn btn-warning btn-block text-white">
-          <i class="fa fa-download d-block"></i>Export --csv
-        </a>
-      </div>
-      {% endif %}
-
-      <div class="col-sm-4 p-2 d-grid ">
-        <a href="{{ dbUrl }}/reIndex/{{ collectionName | url_encode }}" class="btn btn-warning btn-block text-white">
-          <i class="fa fa-sync d-block"></i>Reindex
-        </a>
-      </div>
-
-      <div class="col-sm-4 p-2 d-grid ">
-        <a class="btn btn-warning btn-block text-white import-file-link">
-          <i class="fa fa-upload d-block"></i>Import --mongoexport json
-        </a>
-        <input class="d-none import-input-file" type="file" name="import-file"
-          collection-name="{{ collectionName | url_encode }}" />
-      </div>
-
-      {% if !settings.read_only %}
-      <div class="col-sm-4 p-2 d-grid ">
-        <a href="{{ dbUrl }}/compact/{{ collectionName | url_encode }}" class="btn btn-danger btn-block">
-          <i class="fa fa-compress d-block"></i>Compact
-        </a>
-      </div>
-      {% if !settings.no_delete %}
-      <div class="col-sm-4 p-2 d-grid ">
-        <form method="POST" class="d-grid" action="{{ baseHref }}db/{{ dbName }}/{{ collectionName | url_encode }}"
-          id="db-{{ dbName }}-{{ collectionName }}">
-          <input type="hidden" name="_csrf" value="{{ csrfToken }}">
-          <input type="hidden" name="_method" value="delete">
-          <button type="submit" class="btn btn-danger d-grid  deleteButtonCollection btn-block"
-            data-collection-name="{{ collectionName }}">
-            <i class="fa fa-trash d-block"></i>Delete
-          </button>
-        </form>
-      </div>
-      {% endif %}
-      {% endif %}
+  <div class="card-header py-1 px-2"><strong>Tools</strong></div>
+  <div class="card-body py-2 px-2 d-flex flex-wrap align-items-center gap-2">
+    {% if not settings.me_no_export %}
+    <div class="btn-group btn-group-sm">
+      <a href="{{ dbUrl }}/export/{{ collectionName | url_encode }}?key={{ key }}&value={{ value }}&type={{ type }}&query={{ query | url_encode }}&projection= {{ projection | url_encode }}{% for k, v in sort %}&sort[{{ k }}]={{ v }}{% endfor %}"
+        class="btn btn-outline-secondary" title="Export standard">
+        <i data-lucide="download" class="lucide"></i> Export
+      </a>
+      <a href="{{ dbUrl }}/expArr/{{ collectionName | url_encode }}?key={{ key }}&value={{ value }}&type={{ type }}&query={{ query | url_encode }}&projection= {{ projection | url_encode }}{% for k, v in sort %}&sort[{{ k }}]={{ v }}{% endfor %}"
+        class="btn btn-outline-secondary" title="Export as JSON array">
+        <i data-lucide="download" class="lucide"></i> JSON
+      </a>
+      <a href="{{ dbUrl }}/expCsv/{{ collectionName | url_encode }}?key={{ key }}&value={{ value }}&type={{ type }}&query={{ query | url_encode }}&projection= {{ projection | url_encode }}{% for k, v in sort %}&sort[{{ k }}]={{ v }}{% endfor %}"
+        class="btn btn-outline-secondary" title="Export as CSV">
+        <i data-lucide="download" class="lucide"></i> CSV
+      </a>
     </div>
+    {% endif %}
+    <a href="{{ dbUrl }}/reIndex/{{ collectionName | url_encode }}" class="btn btn-outline-secondary btn-sm" title="Reindex collection">
+      <i data-lucide="refresh-cw" class="lucide"></i> Reindex
+    </a>
+    <a class="btn btn-outline-secondary btn-sm import-file-link" title="Import mongoexport JSON">
+      <i data-lucide="upload" class="lucide"></i> Import
+    </a>
+    <input class="d-none import-input-file" type="file" name="import-file"
+      collection-name="{{ collectionName | url_encode }}" />
+    {% if not settings.read_only %}
+    <a href="{{ dbUrl }}/compact/{{ collectionName | url_encode }}" class="btn btn-outline-secondary btn-sm" title="Compact collection">
+      <i data-lucide="minimize-2" class="lucide"></i> Compact
+    </a>
+    {% if not settings.no_delete %}
+    <form method="POST" class="ms-auto" action="{{ baseHref }}db/{{ dbName }}/{{ collectionName | url_encode }}"
+      id="db-{{ dbName }}-{{ collectionName }}">
+      <input type="hidden" name="_csrf" value="{{ csrfToken }}">
+      <input type="hidden" name="_method" value="delete">
+      <button type="submit" class="btn btn-outline-danger btn-sm deleteButtonCollection"
+        data-collection-name="{{ collectionName }}">
+        <i data-lucide="trash-2" class="lucide"></i> Delete Collection
+      </button>
+    </form>
+    {% endif %}
+    {% endif %}
   </div>
 </div>
 
-{% if !settings.no_delete %}
+{% if not settings.no_delete %}
 <div class="modal fade" id="confirm-deletion-document" tabindex="-1" aria-hidden="true">
   <div class="modal-dialog">
     <div class="modal-content">
@@ -421,8 +406,8 @@
 
 {% if stats != false %}
 <div class="card mb-3">
-  <h2 class="card-header">Collection stats</h2>
-  <table class="table table-bordered table-striped">
+  <div class="card-header"><strong>Collection stats</strong></div>
+  <table class="table table-bordered table-striped mb-0">
     <tr>
       <td>
         <strong>Documents</strong>
@@ -491,32 +476,31 @@
 </div>
 
 <div class="card mb-3">
-  <h2 class="card-header">Indexes</h2>
-  <table class="table table-bordered table-striped">
-    <tr>
-      <th>Name</th>
-      <th>Columns</th>
-      <th>Size</th>
-      <th>Attributes</th>
-      <th>Actions</th>
-    </tr>
+  <div class="card-header"><strong>Indexes</strong></div>
+  <table class="table table-bordered table-striped mb-0">
+    <thead>
+      <tr>
+        <th>Name</th>
+        <th>Columns</th>
+        <th>Size</th>
+        <th>Attributes</th>
+        <th class="text-end">Actions</th>
+      </tr>
+    </thead>
+    <tbody>
     {% for index in indexes %}
     <tr>
-      <td>
-        {{ index.name }}
-      </td>
+      <td>{{ index.name }}</td>
       <td>
         {% for sort in index.key %}
         <div>{{ loop.key }} &nbsp; {% if sort == 1 %} ASC {% else %} DSC {% endif %}</div>
         {% endfor %}
       </td>
-      <td>
-        {{ index.size|convertBytes }}
-      </td>
+      <td>{{ index.size|convertBytes }}</td>
       <td>
         {% for k,v in index %}
         <div>
-          {% if k != 'key' && k != 'v' && k != 'name' && k != 'ns' && k != 'size' %}
+          {% if k != 'key' and k != 'v' and k != 'name' and k != 'ns' and k != 'size' %}
           {{ k }}:
           {% if k == 'partialFilterExpression' %}
           <pre>{{ v | json | safe }}</pre>
@@ -527,18 +511,18 @@
         </div>
         {% endfor %}
       </td>
-      {% if !settings.read_only && !settings.no_delete %}
-      <td>
-        <a class="btn btn-danger" href="{{ dbUrl }}/dropIndex/{{ collectionName | url_encode }}?name={{ index.name }}">
-          <i class="fa fa-trash"></i> Delete
+      {% if not settings.read_only and not settings.no_delete %}
+      <td class="text-end">
+        <a class="btn btn-outline-danger btn-sm" href="{{ dbUrl }}/dropIndex/{{ collectionName | url_encode }}?name={{ index.name }}">
+          <i data-lucide="trash-2" class="lucide"></i> Delete
         </a>
       </td>
       {% else %}
-      <td>
-      </td>
+      <td></td>
       {% endif %}
     </tr>
     {% endfor %}
+    </tbody>
   </table>
 </div>
 {% endif %}
