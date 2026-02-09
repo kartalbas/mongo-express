@@ -101,6 +101,20 @@
 </script>
 {% block scripts %}
 {% endblock %}
+<div id="toast-container" class="toast-container position-fixed bottom-0 end-0 p-3" style="z-index: 1090;"></div>
+
+<div class="modal fade" id="me-confirm-modal" tabindex="-1">
+  <div class="modal-dialog modal-sm">
+    <div class="modal-content">
+      <div class="modal-body" id="me-confirm-message"></div>
+      <div class="modal-footer">
+        <button class="btn btn-secondary btn-sm" data-bs-dismiss="modal">Cancel</button>
+        <button class="btn btn-danger btn-sm" id="me-confirm-ok">OK</button>
+      </div>
+    </div>
+  </div>
+</div>
+
 <script>Alpine.start();</script>
 </body>
 </html>

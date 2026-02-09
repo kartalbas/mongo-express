@@ -110,3 +110,24 @@ h4 { font-size: 0.95rem; }
   min-width: 5.5rem;
   text-align: center;
 }
+
+/* Toast notifications */
+#toast-container .toast {
+  font-size: 0.8125rem;
+  min-width: 280px;
+}
+#toast-container .toast-header {
+  padding: 0.4rem 0.75rem;
+  font-size: 0.8125rem;
+}
+#toast-container .toast-header .lucide {
+  width: 1em;
+  height: 1em;
+}
+#toast-container .toast-body {
+  padding: 0.5rem 0.75rem;
+  max-height: 200px;
+  overflow-y: auto;
+  white-space: pre-wrap;
+  word-break: break-word;
+}
