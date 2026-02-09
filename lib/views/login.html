@@ -90,6 +90,12 @@
         <p class="login-brand">Mongo Express</p>
       </div>
 
+      {% if loginError %}
+      <div class="alert alert-danger mt-3 mb-0 py-2 px-3" style="font-size: 0.85rem;">
+        {{ loginError }}
+      </div>
+      {% endif %}
+
       <form method="POST">
         <input type="hidden" name="_csrf" value="{{ csrfToken }}">
 
