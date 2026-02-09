@@ -12,12 +12,6 @@ trigger:
     include:
       - development
 
-resources:
-  repositories:
-    - repository: mongo-express-deploy
-      type: git
-      name: mongo-express-deploy
-
 parameters:
   - name: branch
     displayName: 'Select a branch'
@@ -93,62 +87,7 @@ stages:
                   condition: succeeded()
 
                 # ============================================================
-                # Step 5: Checkout mongo-express-deploy repository
-                # ============================================================
-                - checkout: mongo-express-deploy
-                  displayName: 'checkout mongo-express-deploy'
-                  persistCredentials: true
-                  clean: true
-                  fetchDepth: 1
-                  condition: succeeded()
-
-                # ============================================================
-                # Step 6: Update Deployment Inventory (mongo-express-deploy)
-                # ============================================================
-                - script: |
-                    cd mongo-express-deploy
-                    git config user.email "azure-pipelines@simetrix.ch"
-                    git config user.name "Azure Pipelines"
-                    git config pull.rebase true
-                    git fetch origin master
-                    git checkout -B master origin/master
-
-                    VALUES_FILE="inventories/mongo-express/$(ENVIRONMENT)/values.yaml"
-
-                    if [ ! -f "$VALUES_FILE" ]; then
-                      echo "ERROR: values.yaml not found at $VALUES_FILE"
-                      exit 1
-                    fi
-
-                    echo "Updating mongo-express version in $VALUES_FILE..."
-
-                    # Update image version for mongo-express
-                    sed -i "s|image: simetrix.azurecr.io/mongo-express:.*|image: simetrix.azurecr.io/mongo-express:$(BUILD_VERSION)|g" "$VALUES_FILE"
-
-                    echo "Updated content:"
-                    grep -A 2 "image: simetrix.azurecr.io/mongo-express" "$VALUES_FILE" || true
-
-                    git add "$VALUES_FILE"
-                    git commit -m "Updated mongo-express ($(ENVIRONMENT)) to new version: $(BUILD_VERSION)"
-                    git pull --rebase origin master
-                    git push origin master
-
-                    echo "Successfully updated deployment inventory"
-                  displayName: 'update inventory version (test)'
-                  condition: succeeded()
-
-                # ============================================================
-                # Step 7: Checkout mongo-express for tagging
-                # ============================================================
-                - checkout: self
-                  displayName: 'checkout mongo-express for tagging'
-                  persistCredentials: true
-                  clean: true
-                  fetchDepth: 1
-                  condition: succeeded()
-
-                # ============================================================
-                # Step 8: Tag Release in mongo-express Repository
+                # Step 5: Tag Release in mongo-express Repository
                 # ============================================================
                 - script: |
                     git config user.email "azure-pipelines@simetrix.ch"
@@ -160,7 +99,7 @@ stages:
                   condition: succeeded()
 
                 # ============================================================
-                # Step 9: Summary
+                # Step 6: Summary
                 # ============================================================
                 - bash: |
                     echo "============================================"
