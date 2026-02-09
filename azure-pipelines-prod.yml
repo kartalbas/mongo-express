@@ -75,7 +75,7 @@ stages:
                       --file Dockerfile \
                       .
                   displayName: 'build docker image without cache'
-                  workingDirectory: '$(Agent.BuildDirectory)/s/mongo-express'
+                  workingDirectory: '$(Build.SourcesDirectory)'
                   condition: succeeded()
 
                 # ============================================================
@@ -95,7 +95,7 @@ stages:
                     git tag $(BUILD_VERSION) HEAD -a -m "mongo-express version: $(BUILD_VERSION)"
                     git push --tags
                   displayName: 'tag new version'
-                  workingDirectory: '$(Agent.BuildDirectory)/s/mongo-express'
+                  workingDirectory: '$(Build.SourcesDirectory)'
                   condition: succeeded()
 
                 # ============================================================
