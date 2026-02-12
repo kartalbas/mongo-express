@@ -37,7 +37,7 @@ variables:
   - name: ENVIRONMENT
     value: 'prod'
   - name: DOCKER_BUILDKIT
-    value: '1'
+    value: '0'
 
 stages:
   - stage: Build
@@ -74,7 +74,7 @@ stages:
                 # Step 3: Build Docker Image
                 # ============================================================
                 - script: |
-                    export DOCKER_BUILDKIT=1
+                    export DOCKER_BUILDKIT=0
                     docker build \
                       --no-cache \
                       --tag simetrix.azurecr.io/mongo-express:$(BUILD_VERSION) \
