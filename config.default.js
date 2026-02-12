@@ -127,10 +127,9 @@ export default {
     path: process.env.ME_CONFIG_HEALTH_CHECK_PATH || '/status',
   },
 
-  // set useBasicAuth to true if you want to authenticate mongo-express logins
-  // auto-enables when ME_CONFIG_BASICAUTH_PASSWORD is set, or explicitly via ME_CONFIG_BASICAUTH_ENABLED
-  useBasicAuth: getBoolean(getFileEnv(basicAuthEnabled) || getFileEnv(basicAuth))
-    || !!getFileEnv(basicAuthPassword),
+  // set useBasicAuth to true if you want to use the browser's native basic auth popup
+  // leave false to use the custom login form (which validates against basicAuth credentials)
+  useBasicAuth: getBoolean(getFileEnv(basicAuthEnabled) || getFileEnv(basicAuth)),
 
   basicAuth: {
     username: getFileEnv(basicAuthUsername) || 'admin',
