@@ -372,15 +372,15 @@
   <div class="card-body py-2 px-2 d-flex flex-wrap align-items-center gap-2">
     {% if not settings.me_no_export %}
     <div class="btn-group btn-group-sm">
-      <a href="{{ dbUrl }}/export/{{ collectionName | url_encode }}?key={{ key }}&value={{ value }}&type={{ type }}&query={{ query | url_encode }}&projection= {{ projection | url_encode }}{% for k, v in sort %}&sort[{{ k }}]={{ v }}{% endfor %}"
+      <a href="{{ dbUrl }}/export/{{ collectionName | url_encode }}?key={{ key | default('', true) }}&value={{ value | default('', true) }}&type={{ type | default('', true) }}&query={{ query | default('', true) | url_encode }}&projection={{ projection | default('', true) | url_encode }}{% for k, v in sort %}&sort[{{ k }}]={{ v }}{% endfor %}"
         class="btn btn-outline-secondary" title="Export standard">
         <i data-lucide="download" class="lucide"></i> Export
       </a>
-      <a href="{{ dbUrl }}/expArr/{{ collectionName | url_encode }}?key={{ key }}&value={{ value }}&type={{ type }}&query={{ query | url_encode }}&projection= {{ projection | url_encode }}{% for k, v in sort %}&sort[{{ k }}]={{ v }}{% endfor %}"
+      <a href="{{ dbUrl }}/expArr/{{ collectionName | url_encode }}?key={{ key | default('', true) }}&value={{ value | default('', true) }}&type={{ type | default('', true) }}&query={{ query | default('', true) | url_encode }}&projection={{ projection | default('', true) | url_encode }}{% for k, v in sort %}&sort[{{ k }}]={{ v }}{% endfor %}"
         class="btn btn-outline-secondary" title="Export as JSON array">
         <i data-lucide="download" class="lucide"></i> JSON
       </a>
-      <a href="{{ dbUrl }}/expCsv/{{ collectionName | url_encode }}?key={{ key }}&value={{ value }}&type={{ type }}&query={{ query | url_encode }}&projection= {{ projection | url_encode }}{% for k, v in sort %}&sort[{{ k }}]={{ v }}{% endfor %}"
+      <a href="{{ dbUrl }}/expCsv/{{ collectionName | url_encode }}?key={{ key | default('', true) }}&value={{ value | default('', true) }}&type={{ type | default('', true) }}&query={{ query | default('', true) | url_encode }}&projection={{ projection | default('', true) | url_encode }}{% for k, v in sort %}&sort[{{ k }}]={{ v }}{% endfor %}"
         class="btn btn-outline-secondary" title="Export as CSV">
         <i data-lucide="download" class="lucide"></i> CSV
       </a>
