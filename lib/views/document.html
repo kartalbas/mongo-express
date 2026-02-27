@@ -52,6 +52,7 @@
 {% endblock %}
 
 {% block content %}
+<script type="application/json" id="clone-document-json">{{ docString | safe }}</script>
 
 {% if document._id._bsontype == 'Binary' %}
 <form method="POST"
@@ -71,25 +72,23 @@
 {% endif %}
   <input type="hidden" name="_csrf" value="{{ csrfToken }}">
   <input type="hidden" name="_method" value="put">
-  {% if docLength > 10 %}
-    <div class="d-flex align-items-center mb-3 mt-3">
-      {% if not settings.read_only %}
-        <button onclick="return onBackClick()" class="backButton btn btn-outline-secondary btn-sm">
-          <i data-lucide="arrow-left" class="lucide"></i> Back
-        </button>
-        <button type="button" class="btn btn-outline-primary btn-sm ms-2" onclick="cloneDocument()" title="Clone this document">
-          <i data-lucide="plus" class="lucide"></i> Clone
-        </button>
-        <button type="submit" class="btn btn-success btn-sm ms-auto" onclick="return onSubmitClick()">
-          <i data-lucide="save" class="lucide"></i> Save
-        </button>
-      {% else %}
-        <button onclick="return history.back()" class="btn btn-outline-secondary btn-sm">
-          <i data-lucide="arrow-left" class="lucide"></i> Back
-        </button>
-      {% endif %}
-    </div>
-  {% endif %}
+  <div class="d-flex align-items-center mb-3 mt-3">
+    {% if not settings.read_only %}
+      <button onclick="return onBackClick()" class="backButton btn btn-outline-secondary btn-sm">
+        <i data-lucide="arrow-left" class="lucide"></i> Back
+      </button>
+      <button type="button" class="btn btn-outline-primary btn-sm ms-2" onclick="cloneDocument()" title="Clone this document">
+        <i data-lucide="plus" class="lucide"></i> Clone
+      </button>
+      <button type="submit" class="btn btn-success btn-sm ms-auto" onclick="return onSubmitClick()">
+        <i data-lucide="save" class="lucide"></i> Save
+      </button>
+    {% else %}
+      <button onclick="return history.back()" class="btn btn-outline-secondary btn-sm">
+        <i data-lucide="arrow-left" class="lucide"></i> Back
+      </button>
+    {% endif %}
+  </div>
 
   <textarea class="col-md-12" id="document" name="document"{% if settings.read_only %} readonly="readonly"{% endif %}>{{ docString }}</textarea>
 
@@ -161,14 +160,15 @@
 
 {% block scripts %}
 <script>
-  // F1: Clone Document - standalone, no webpack dependency
+  // F1: Clone Document - reads raw doc from server-rendered JSON
   function cloneDocument() {
     try {
-      // Get document text from CodeMirror editor or fall back to textarea
-      var textarea = document.getElementById('document');
-      var cmEl = textarea.parentNode.querySelector('.cm-content');
-      var docText = cmEl ? cmEl.textContent : textarea.value;
-      sessionStorage.setItem('meCloneDocument', docText);
+      var jsonEl = document.getElementById('clone-document-json');
+      if (!jsonEl) { alert('Clone failed: document data not found'); return; }
+      var docText = jsonEl.textContent;
+      // Strip _id field so a new one is generated on insert
+      var stripped = docText.replace(/^\s*"_id"\s*:\s*(?:ObjectId\([^)]*\)|"[^"]*"|[^\n,}]+)\s*,?\s*\n?/m, '');
+      sessionStorage.setItem('meCloneDocument', stripped);
       var s = ME_SETTINGS;
       window.location.href = s.baseHref + 'db/' + s.dbName + '/' + s.collectionName + '?clone=1';
     } catch (e) {

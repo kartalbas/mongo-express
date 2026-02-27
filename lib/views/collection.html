@@ -684,10 +684,9 @@
     var cloneData = sessionStorage.getItem('meCloneDocument');
     if (!cloneData) return;
     sessionStorage.removeItem('meCloneDocument');
-    // Strip _id field so a new one is generated on insert
-    var stripped = cloneData.replace(/^\s*"_id"\s*:\s*(?:ObjectId\([^)]*\)|"[^"]*"|[^\n,}]+)\s*,?\s*\n?/m, '');
+    // _id already stripped on document page
     var textarea = document.getElementById('document');
-    if (textarea) textarea.value = stripped;
+    if (textarea) textarea.value = cloneData;
     window._meClonePending = true;
   })();
 </script>
@@ -698,9 +697,12 @@
   if (window._meClonePending) {
     delete window._meClonePending;
     var modalEl = document.getElementById('addDocument');
-    if (modalEl) {
+    if (modalEl && window.bootstrap && window.bootstrap.Modal) {
       var modal = new bootstrap.Modal(modalEl);
       modal.show();
+      // Update modal title to indicate cloning
+      var title = modalEl.querySelector('.modal-title');
+      if (title) title.textContent = 'Clone Document';
     }
   }
 </script>
