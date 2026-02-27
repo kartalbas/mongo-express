@@ -44,6 +44,7 @@
 {% endblock %}
 
 {% block content %}
+<input type="hidden" name="_csrf" id="monitoring-csrf" value="{{ csrfToken }}">
 <div x-data="monitoringApp()">
   <div class="d-flex align-items-center gap-2 mb-2">
     <h5 class="mb-0"><i data-lucide="activity" class="lucide"></i> Real-Time Performance</h5>
@@ -210,6 +211,9 @@
               <th @click="toggleOpsSort('microsecs')">Duration <span class="sort-icon" :class="{'active': opsSort.field === 'microsecs'}" x-text="opsSort.field === 'microsecs' ? (opsSort.dir === 1 ? '\u25B2' : '\u25BC') : '\u25BC'"></span></th>
               <th>Client</th>
               <th>Plan</th>
+              {% if not settings.read_only %}
+              <th>Action</th>
+              {% endif %}
             </tr>
           </thead>
           <tbody>
@@ -225,6 +229,15 @@
                 </td>
                 <td style="max-width:120px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;" x-text="op.client || op.appName"></td>
                 <td><code style="font-size:0.625rem;" x-text="op.planSummary || '\u2014'"></code></td>
+                {% if not settings.read_only %}
+                <td @click.stop>
+                  <button class="btn btn-outline-danger btn-sm" style="font-size:0.625rem; padding:0.125rem 0.375rem;"
+                    @click="killOperation(op.opid)" :disabled="killingOp === op.opid">
+                    <span x-show="killingOp === op.opid" class="spinner-border spinner-border-sm" style="width:0.75rem;height:0.75rem;"></span>
+                    <span x-show="killingOp !== op.opid">Kill</span>
+                  </button>
+                </td>
+                {% endif %}
               </tr>
             </template>
           </tbody>

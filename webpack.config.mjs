@@ -78,6 +78,12 @@ export default {
       dependOn: ['vendor', 'codemirror'],
     },
 
+    // F9: Geospatial Map
+    geomap: {
+      import: './lib/scripts/geomap.js',
+      dependOn: 'vendor',
+    },
+
     // Shared
     vendor: './lib/scripts/vendor.js',
     codemirror: {

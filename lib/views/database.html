@@ -29,13 +29,9 @@
   <div class="card-header d-flex align-items-center py-1 px-1">
     <strong class="ps-2">Collections</strong>
     {% if not settings.read_only %}
-    <form class="ms-auto d-flex align-items-center gap-2" method="POST">
-      <input type="hidden" name="_csrf" value="{{ csrfToken }}">
-      <input type="text" class="form-control form-control-sm" id="collection" name="collection" placeholder="Collection name" style="width: 160px;" />
-      <button type="submit" class="btn btn-primary btn-sm text-nowrap" style="min-width:7rem;">
-        <i data-lucide="plus" class="lucide"></i> Create
-      </button>
-    </form>
+    <button type="button" class="btn btn-primary btn-sm text-nowrap ms-auto" data-bs-toggle="modal" data-bs-target="#createCollectionModal" style="min-width:7rem;">
+      <i data-lucide="plus" class="lucide"></i> Create Collection
+    </button>
     {% endif %}
   </div>
   <table class="table table-hover mb-0 align-middle">
@@ -140,6 +136,83 @@
 </div>
 {% endif %}
 
+
+{% if not settings.read_only %}
+<!-- Create Collection Modal -->
+<div class="modal fade" id="createCollectionModal" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <form method="POST" x-data="createCollection()">
+        <input type="hidden" name="_csrf" value="{{ csrfToken }}">
+        <div class="modal-header">
+          <h5 class="modal-title">Create Collection</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+        </div>
+        <div class="modal-body">
+          <div class="mb-3">
+            <label for="collectionNameInput" class="form-label" style="font-size:0.8125rem;">Collection Name</label>
+            <input type="text" class="form-control form-control-sm" id="collectionNameInput" name="collection" required>
+          </div>
+          <div class="mb-2">
+            <div class="form-check form-check-inline">
+              <input class="form-check-input" type="checkbox" id="cappedCheck" x-model="capped" @change="if(capped) timeseries = false">
+              <label class="form-check-label" for="cappedCheck" style="font-size:0.8125rem;">Capped</label>
+            </div>
+            <div class="form-check form-check-inline">
+              <input class="form-check-input" type="checkbox" id="timeseriesCheck" x-model="timeseries" @change="if(timeseries) capped = false">
+              <label class="form-check-label" for="timeseriesCheck" style="font-size:0.8125rem;">Time Series</label>
+            </div>
+          </div>
+          <!-- Capped options -->
+          <div x-show="capped" x-cloak class="border rounded p-2 mb-2" style="font-size:0.8125rem;">
+            <div class="mb-2">
+              <label for="cappedSize" class="form-label mb-0">Max Size (bytes) <span class="text-danger">*</span></label>
+              <input type="number" class="form-control form-control-sm" id="cappedSize" name="cappedSize" min="1" placeholder="e.g. 1048576">
+            </div>
+            <div>
+              <label for="cappedMax" class="form-label mb-0">Max Documents <small class="text-muted">(optional)</small></label>
+              <input type="number" class="form-control form-control-sm" id="cappedMax" name="cappedMax" min="1" placeholder="e.g. 5000">
+            </div>
+          </div>
+          <!-- Time Series options -->
+          <div x-show="timeseries" x-cloak class="border rounded p-2 mb-2" style="font-size:0.8125rem;">
+            <div class="mb-2">
+              <label for="tsTimeField" class="form-label mb-0">Time Field <span class="text-danger">*</span></label>
+              <input type="text" class="form-control form-control-sm" id="tsTimeField" name="tsTimeField" placeholder="e.g. timestamp">
+            </div>
+            <div class="mb-2">
+              <label for="tsMetaField" class="form-label mb-0">Meta Field <small class="text-muted">(optional)</small></label>
+              <input type="text" class="form-control form-control-sm" id="tsMetaField" name="tsMetaField" placeholder="e.g. sensor">
+            </div>
+            <div class="mb-2">
+              <label for="tsGranularity" class="form-label mb-0">Granularity</label>
+              <select class="form-select form-select-sm" id="tsGranularity" name="tsGranularity">
+                <option value="">Default</option>
+                <option value="seconds">Seconds</option>
+                <option value="minutes">Minutes</option>
+                <option value="hours">Hours</option>
+              </select>
+            </div>
+            <div>
+              <label for="tsExpireAfterSeconds" class="form-label mb-0">Expire After (seconds) <small class="text-muted">(optional)</small></label>
+              <input type="number" class="form-control form-control-sm" id="tsExpireAfterSeconds" name="tsExpireAfterSeconds" min="0" placeholder="e.g. 86400">
+            </div>
+          </div>
+          <!-- Hidden fields for type flags -->
+          <input type="hidden" name="capped" :value="capped ? 'true' : ''">
+          <input type="hidden" name="timeseries" :value="timeseries ? 'true' : ''">
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-sm btn-outline-secondary" data-bs-dismiss="modal">Cancel</button>
+          <button type="submit" class="btn btn-sm btn-primary">
+            <i data-lucide="plus" class="lucide"></i> Create
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+{% endif %}
 
 {% if stats != false %}
 <div class="card mb-3">

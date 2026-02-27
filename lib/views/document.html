@@ -77,6 +77,9 @@
         <button onclick="return onBackClick()" class="backButton btn btn-outline-secondary btn-sm">
           <i data-lucide="arrow-left" class="lucide"></i> Back
         </button>
+        <button type="button" class="btn btn-outline-secondary btn-sm ms-2 cloneDocumentBtn" title="Clone this document">
+          <i data-lucide="plus" class="lucide"></i> Clone
+        </button>
         <button type="submit" class="btn btn-success btn-sm ms-auto" onclick="return onSubmitClick()">
           <i data-lucide="save" class="lucide"></i> Save
         </button>
@@ -95,6 +98,9 @@
       <button onclick="return onBackClick()" class="backButton btn btn-outline-secondary btn-sm">
         <i data-lucide="arrow-left" class="lucide"></i> Back
       </button>
+      <button type="button" class="btn btn-outline-secondary btn-sm ms-2 cloneDocumentBtn" title="Clone this document">
+        <i data-lucide="plus" class="lucide"></i> Clone
+      </button>
       <button type="submit" class="btn btn-success btn-sm ms-auto" onclick="return onSubmitClick()">
         <i data-lucide="save" class="lucide"></i> Save
       </button>
@@ -105,6 +111,20 @@
     {% endif %}
   </div>
 </form>
+
+<!-- F9: Geospatial Map Visualization -->
+<script type="application/json" id="geo-document-json">{{ docString | safe }}</script>
+<div x-data="geoMap()" x-show="hasGeo" x-cloak class="card mb-3">
+  <div class="card-header py-1 px-2 d-flex align-items-center" style="cursor:pointer;" @click="toggleMap()">
+    <i data-lucide="map-pin" class="lucide me-1"></i>
+    <strong style="font-size:0.8125rem;">Geospatial Data</strong>
+    <span class="badge bg-info ms-2" style="font-size:0.625rem;" x-text="geoFields.length + ' location(s)'"></span>
+    <span class="ms-auto" style="font-size:0.75rem;" x-text="expanded ? '\u25B2' : '\u25BC'"></span>
+  </div>
+  <div x-show="expanded" x-cloak class="card-body p-0">
+    <div id="geo-map-container" style="height:350px; width:100%;"></div>
+  </div>
+</div>
 
 {% if not settings.read_only and not settings.no_delete %}
   {% if document._id._bsontype == 'Binary' %}
@@ -142,4 +162,7 @@
 {% block scripts %}
 <script src="{{ baseHref }}{{ assets.codemirror.js }}"></script>
 <script src="{{ baseHref }}{{ assets.document.js }}"></script>
+{% if assets.geomap %}
+<script src="{{ baseHref }}{{ assets.geomap.js }}"></script>
+{% endif %}
 {% endblock %}

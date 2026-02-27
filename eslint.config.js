@@ -59,7 +59,11 @@ export default [
           devDependencies: [
             '**/test/**/*.js',
             '**/scripts/*.js',
+            '**/scripts/*.cjs',
             '**/webpack.config.mjs',
+            'eslint.config.js',
+            'cypress.config.mjs',
+            'cypress/**/*.js',
           ],
         },
       ],
@@ -91,6 +95,42 @@ export default [
     },
   },
   {
-    ignores: ['build/**', 'node_modules/**', 'build-assets.json'],
+    files: ['cypress/**/*.js', 'cypress.config.mjs'],
+    languageOptions: {
+      globals: {
+        describe: 'readonly',
+        it: 'readonly',
+        cy: 'readonly',
+        Cypress: 'readonly',
+        before: 'readonly',
+        after: 'readonly',
+        beforeEach: 'readonly',
+        afterEach: 'readonly',
+      },
+    },
+  },
+  {
+    files: ['**/*.cjs'],
+    languageOptions: {
+      sourceType: 'commonjs',
+      globals: {
+        module: 'readonly',
+        require: 'readonly',
+        __dirname: 'readonly',
+        __filename: 'readonly',
+        exports: 'readonly',
+      },
+    },
+  },
+  {
+    ignores: [
+      'build/**',
+      'node_modules/**',
+      'build-assets.json',
+      '.yarn/**',
+      'lib/views/**',
+      'instrumented/**',
+      'coverage/**',
+    ],
   },
 ];

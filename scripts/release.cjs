@@ -1,4 +1,5 @@
 // Called from .github/workflows/publish.yml
+'use strict';
 
 const generateReleaseNotes = async ({
   github,

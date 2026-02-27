@@ -29,7 +29,8 @@
 
 {% block content %}
 <div x-data="pipeline()">
-  <div class="d-flex align-items-center gap-2 mb-3">
+  <input type="hidden" name="_csrf" value="{{ csrfToken }}">
+  <div class="d-flex align-items-center gap-2 mb-3 flex-wrap">
     <h5 class="mb-0">Aggregation Pipeline</h5>
     <button class="btn btn-success btn-sm" @click="addStage()">
       <i data-lucide="plus" class="lucide"></i> Add Stage
@@ -40,7 +41,56 @@
     <button class="btn btn-outline-info btn-sm" @click="previewPipeline()">
       Preview
     </button>
+    <div class="btn-group btn-group-sm">
+      <button class="btn btn-outline-secondary" @click="exportResults('json')" title="Export results as JSON">
+        <i data-lucide="download" class="lucide"></i> JSON
+      </button>
+      <button class="btn btn-outline-secondary" @click="exportResults('csv')" title="Export results as CSV">
+        <i data-lucide="download" class="lucide"></i> CSV
+      </button>
+    </div>
+    <button class="btn btn-outline-secondary btn-sm" @click="showExportCode = !showExportCode" title="Export pipeline as code">
+      <i data-lucide="tag" class="lucide"></i> Code
+    </button>
+    {% if not settings.read_only %}
+    <button class="btn btn-outline-secondary btn-sm" @click="showCreateView = !showCreateView" title="Save as View">
+      <i data-lucide="layers" class="lucide"></i> Save as View
+    </button>
+    {% endif %}
   </div>
+
+  <!-- F5: Export Pipeline as Code -->
+  <div x-show="showExportCode" x-cloak class="card mb-3">
+    <div class="card-header py-1 px-2 d-flex align-items-center">
+      <strong style="font-size:0.8125rem;">Export Pipeline as Code</strong>
+      <button class="btn btn-sm btn-close ms-auto" @click="showExportCode = false" style="font-size:0.5rem;"></button>
+    </div>
+    <div class="card-body py-2 px-2">
+      <ul class="nav nav-tabs mb-2" style="font-size:0.75rem;">
+        <li class="nav-item"><a class="nav-link py-1 px-2" :class="codeTab === 'node' ? 'active' : ''" href="#" @click.prevent="codeTab = 'node'">Node.js</a></li>
+        <li class="nav-item"><a class="nav-link py-1 px-2" :class="codeTab === 'python' ? 'active' : ''" href="#" @click.prevent="codeTab = 'python'">Python</a></li>
+        <li class="nav-item"><a class="nav-link py-1 px-2" :class="codeTab === 'java' ? 'active' : ''" href="#" @click.prevent="codeTab = 'java'">Java</a></li>
+      </ul>
+      <pre style="font-size:0.75rem; max-height:300px; overflow:auto; background:var(--bs-tertiary-bg,#f8f9fa); border-radius:4px; padding:0.5rem;" x-text="generateCode()"></pre>
+      <button class="btn btn-outline-secondary btn-sm mt-1" @click="copyCode()">Copy to Clipboard</button>
+    </div>
+  </div>
+
+  <!-- F12: Create View -->
+  {% if not settings.read_only %}
+  <div x-show="showCreateView" x-cloak class="card mb-3">
+    <div class="card-header py-1 px-2 d-flex align-items-center">
+      <strong style="font-size:0.8125rem;">Save as View</strong>
+      <button class="btn btn-sm btn-close ms-auto" @click="showCreateView = false" style="font-size:0.5rem;"></button>
+    </div>
+    <div class="card-body py-2 px-2">
+      <div class="d-flex align-items-center gap-2">
+        <input type="text" class="form-control form-control-sm" x-model="viewName" placeholder="View name" style="max-width:250px;">
+        <button class="btn btn-primary btn-sm" @click="createView()" :disabled="!viewName.trim()">Create View</button>
+      </div>
+    </div>
+  </div>
+  {% endif %}
 
   <template x-for="(stage, index) in stages" :key="index">
     <div class="card mb-2">

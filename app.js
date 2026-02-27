@@ -21,7 +21,6 @@ let sslOptions;
 const loadConfig = async () => {
   if (fs.existsSync('./config.js')) {
     try {
-      // eslint-disable-next-line import-x/no-unresolved
       const { default: configCustom } = await import('./config.js');
       return deepmerge(configDefault, configCustom);
     } catch (error) {
