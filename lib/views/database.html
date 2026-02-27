@@ -32,7 +32,7 @@
     <form class="ms-auto d-flex align-items-center gap-2" method="POST">
       <input type="hidden" name="_csrf" value="{{ csrfToken }}">
       <input type="text" class="form-control form-control-sm" id="collection" name="collection" placeholder="Collection name" style="width: 160px;" />
-      <button type="submit" class="btn btn-primary btn-sm text-nowrap" style="min-width:6rem;">
+      <button type="submit" class="btn btn-primary btn-sm text-nowrap" style="min-width:7rem;">
         <i data-lucide="plus" class="lucide"></i> Create
       </button>
     </form>
@@ -70,7 +70,7 @@
           <form method="POST" action="{{ dbUrl }}/{{ c | url_encode }}">
             <input type="hidden" name="_csrf" value="{{ csrfToken }}">
             <input type="hidden" name="_method" value="delete">
-            <button type="submit" class="btn btn-danger btn-sm text-nowrap deleteButton" data-collection-name="{{ c }}">
+            <button type="submit" class="btn btn-danger btn-sm text-nowrap deleteButton" style="min-width:7rem;" data-collection-name="{{ c }}">
               <i data-lucide="trash-2" class="lucide"></i> Delete
             </button>
           </form>

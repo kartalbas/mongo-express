@@ -249,8 +249,13 @@
 
 {% if pagination %}
 <nav class="navbar" aria-label="Page navigation">
-  <div class="nav navbar-nav mx-auto">
+  <div class="nav navbar-nav mx-auto d-flex align-items-center gap-3">
     <div id="paginator"></div>
+    <select id="page-size-top" class="form-select form-select-sm page-size-select" style="width:auto;font-size:0.75rem;" title="Documents per page">
+      {% for opt in [10, 30, 50, 100, 500, 1000] %}
+      <option value="{{ opt }}" {% if opt == limit %}selected{% endif %}>{{ opt }} / page</option>
+      {% endfor %}
+    </select>
   </div>
 </nav>
 {% endif %}
@@ -342,8 +347,13 @@
 
 {% if pagination %}
 <nav class="navbar" aria-label="Page navigation">
-  <div class="nav navbar-nav mx-auto">
+  <div class="nav navbar-nav mx-auto d-flex align-items-center gap-3">
     <div id="paginator-bottom"></div>
+    <select id="page-size-bottom" class="form-select form-select-sm page-size-select" style="width:auto;font-size:0.75rem;" title="Documents per page">
+      {% for opt in [10, 30, 50, 100, 500, 1000] %}
+      <option value="{{ opt }}" {% if opt == limit %}selected{% endif %}>{{ opt }} / page</option>
+      {% endfor %}
+    </select>
   </div>
 </nav>
 {% endif %}

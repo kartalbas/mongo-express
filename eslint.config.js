@@ -27,6 +27,7 @@ export default [
         alert: 'readonly',
         fetch: 'readonly',
         ME_SETTINGS: 'readonly',
+        ME: 'readonly',
         __DEV__: 'readonly',
       },
     },
