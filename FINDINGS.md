@@ -51,28 +51,98 @@
   3. Selection is saved to `localStorage` (`me_docs_per_page`) and automatically restored on next visit
   4. Changing the page size resets to page 1 to avoid out-of-range skip values
 
+### FIX-006: Dark theme flash on page load
+
+- **Files:** `lib/views/layout.html`, `lib/scripts/vendor.js`
+- **Status:** Fixed
+- **Description:** When dark theme was selected, a brief flash of light theme was visible on page load because theme was applied via Alpine.js `init()` which runs after body renders.
+- **Fix:** Applied theme via inline `<script>` in `<head>` before first paint. Changed navbar to Bootstrap 5.3 theme-aware `bg-body-tertiary` class.
+
+### FIX-007: ReDoS risk in collection query regex (S-01)
+
+- **File:** `lib/routes/collection.js`
+- **Status:** Fixed
+- **Description:** User-controlled regex in collection query filters (`new RegExp(value, 'i')`) had no escaping of metacharacters, allowing ReDoS attacks.
+- **Fix:** Added `replaceAll(/[$()*+.?[\\\]^{|}]/g, String.raw\`\\$&\`)` to escape all regex metacharacters before passing to `new RegExp()`.
+
+### FIX-008: CSRF cookie secure flag hardcoded to false (S-03)
+
+- **File:** `lib/router.js`
+- **Status:** Fixed
+- **Description:** CSRF cookie had `secure: false` hardcoded, making it vulnerable to downgrade attacks when HTTPS is in use.
+- **Fix:** Changed to `secure: config.site.sslEnabled` so the cookie is marked secure when SSL is enabled.
+
+### FIX-009: Fragile password masking in connection string (S-04)
+
+- **File:** `lib/db.js`
+- **Status:** Fixed
+- **Description:** Password masking regex `/(mongo.*?:\/\/.*?:).*?@/` may not cover all MongoDB URI formats.
+- **Fix:** Replaced with `URL` API parsing — `new URL(connectionString)` and setting `.password = '****'`, with regex fallback.
+
+### FIX-010: Missing early returns in database.js error handlers (E-01)
+
+- **File:** `lib/routes/database.js`
+- **Status:** Fixed
+- **Description:** `addDatabase`, `deleteDatabase`, and `viewDatabase` used `.then().catch()` chains where errors didn't prevent subsequent code from executing.
+- **Fix:** Refactored all three handlers to use `async/await` with `try/catch` and proper early `return` statements. Also removed dead commented-out code (Q-01).
+
+### FIX-011: MongoDB errors exposed to frontend (E-02)
+
+- **File:** `lib/routes/collection.js`, `lib/routes/gridfs.js`
+- **Status:** Fixed
+- **Description:** Raw `error.message` and `error.toString()` were sent to users via session flash messages, potentially leaking database structure/internals.
+- **Fix:** Replaced all raw error messages with context-specific safe messages (e.g. "Failed to create index.", "Failed to delete collection."). Raw errors are still logged to server console for debugging.
+
+### FIX-012: GridFS fragile setTimeout timing (E-03)
+
+- **File:** `lib/routes/gridfs.js`
+- **Status:** Fixed
+- **Description:** Upload completion used `setTimeout(500ms)` before redirecting — a fragile timing hack. File deletion also used `setTimeout`.
+- **Fix:** Removed all `setTimeout` calls. Redirect directly in the `finish` event handler. Also fixed `req.session.error(...)` bug (was calling error as a function instead of assigning a string) in `addBucket`, `deleteBucket`, and `renameBucket`.
+
+### FIX-013: Silent serverStatus failure (E-04)
+
+- **File:** `lib/routes/index.js`
+- **Status:** Fixed
+- **Description:** `serverStatus()` failure was only logged to console; user saw no indication of connection issues.
+- **Fix:** Set `req.session.error` with a user-friendly message so it appears as a flash alert on the homepage.
+
+### FIX-014: Empty password not validated (L-03)
+
+- **File:** `lib/router.js`
+- **Status:** Fixed
+- **Description:** Empty password submission was treated as "unchanged" (keeping the previous password) instead of being explicitly handled.
+- **Fix:** Added explicit check: empty password now sets `connection.password = ''` instead of silently keeping the old value.
+
+### FIX-015: Insecure TLS default (Q-04)
+
+- **File:** `config.default.js`
+- **Status:** Fixed
+- **Description:** `tlsAllowInvalidCertificates` defaulted to `true`, which is insecure for production.
+- **Fix:** Changed default to `false`. Users can still override via `ME_CONFIG_MONGODB_TLS_ALLOW_CERTS=true` environment variable.
+
+### FIX-016: Shell command parsing hardened (S-02)
+
+- **File:** `lib/routes/shell.js`
+- **Status:** Fixed
+- **Description:** Regex-based shell command parsing was loose, could allow unexpected inputs.
+- **Fix:**
+  1. Added `MAX_COMMAND_LENGTH` (10,000 chars) input size limit
+  2. Tightened collection/method regex to only allow safe identifiers (`[A-Z_a-z]\w{0,120}`)
+  3. Added JSON object type validation for `db.runCommand()` argument
+  4. Sanitized error responses (no longer exposes raw `error.message`)
+  5. Extracted `MAX_CURSOR_RESULTS` constant for find() limit
+
+### FIX-017: Per-request file size validation on import (S-05)
+
+- **File:** `lib/routes/collection.js`
+- **Status:** Fixed
+- **Description:** File import only relied on the global 50MB middleware limit with no per-request validation.
+- **Fix:** Added `MAX_IMPORT_FILE_SIZE` (16 MB) constant and total file size check before processing. Returns HTTP 413 if exceeded.
+
 ---
 
 ## Open Issues
-
-### HIGH — Security
-
-| # | Issue | Location | Description |
-|---|-------|----------|-------------|
-| S-01 | ReDoS risk | `lib/routes/collection.js` | User-controlled regex in collection query filters (`new RegExp(value, 'i')`) with no escaping of metacharacters. |
-| S-02 | Shell command parsing is loose | `lib/routes/shell.js:53-90` | Regex-based parsing of shell commands could allow unexpected inputs past the whitelist. |
-| S-03 | CSRF cookie `secure: false` | `lib/router.js:132` | Vulnerable to downgrade attacks when HTTPS is expected. |
-| S-04 | Fragile password masking | `lib/router.js:93` | Connection string password masking regex may not cover all MongoDB URI formats. |
-| S-05 | No per-request file size limit | `lib/routes/collection.js:758-812` | File upload only relies on middleware global 50MB limit, no per-request validation. |
-
-### HIGH — Error Handling
-
-| # | Issue | Location | Description |
-|---|-------|----------|-------------|
-| E-01 | TODO error handlers | `lib/routes/database.js:53,68,74,85` | Database create/delete operations don't return early after errors, execution continues. |
-| E-02 | MongoDB errors exposed to frontend | `lib/routes/collection.js` (multiple) | Raw error messages could leak database structure to users. |
-| E-03 | GridFS fragile timing | `lib/routes/gridfs.js:64-69` | Upload completion uses `setTimeout(500ms)` — a fragile timing hack instead of proper async handling. |
-| E-04 | Silent serverStatus failure | `lib/routes/index.js:117` | `serverStatus()` error only logged to console, user sees no indication of connection issues. |
 
 ### MEDIUM — Race Conditions & Logic
 
@@ -80,7 +150,6 @@
 |---|-------|----------|-------------|
 | L-01 | Global state update without locking | `lib/db.js:29-73` | `updateDatabases()` modifies global state — concurrent requests can corrupt the collection list. |
 | L-02 | updateDatabases on every request | `lib/router.js:261-265` | Called per-request, causing both performance overhead and consistency risk. |
-| L-03 | Empty password not validated | `lib/router.js:203-204` | Empty password submission treated as "unchanged" instead of being rejected. |
 
 ### MEDIUM — Test Coverage Gaps
 
@@ -97,10 +166,8 @@
 
 | # | Issue | Location | Description |
 |---|-------|----------|-------------|
-| Q-01 | Dead code | `lib/routes/database.js:65-72` | Commented-out code for dropping auto-created collection. |
 | Q-02 | Small schema sample | `lib/routes/collection.js:679-737` | Schema analysis only samples 100 docs with 3 samples per field — may not represent actual schema. |
 | Q-03 | Hard-coded result limits | `lib/routes/shell.js` | Shell find/aggregate hard-coded to 100 results, not configurable. |
-| Q-04 | Insecure TLS default | `config.default.js:81` | `tlsAllowInvalidCertificates` defaults to `true` — insecure for production. |
 
 ### LOW — Missing Features
 

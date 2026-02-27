@@ -78,7 +78,7 @@ export default {
       tls: getBoolean(process.env.ME_CONFIG_MONGODB_TLS, mongo.tls),
 
       // tlsAllowInvalidCertificates: validate mongod server certificate against CA
-      tlsAllowInvalidCertificates: getBoolean(process.env.ME_CONFIG_MONGODB_TLS_ALLOW_CERTS, true),
+      tlsAllowInvalidCertificates: getBoolean(process.env.ME_CONFIG_MONGODB_TLS_ALLOW_CERTS, false),
 
       // tlsCAFile: single PEM file on disk
       tlsCAFile: process.env.ME_CONFIG_MONGODB_TLS_CA_FILE,
