@@ -18,6 +18,7 @@ const bsonSpec = () => ({
     sslEnabled: false,
     sslCert: '',
     sslKey: '',
+    baseUrl: '/',
   },
 
   healthCheck: {
@@ -25,6 +26,11 @@ const bsonSpec = () => ({
   },
 
   useBasicAuth: false,
+
+  basicAuth: {
+    username: 'admin',
+    password: 'pass',
+  },
 
   options: {
     documentsPerPage: 10,

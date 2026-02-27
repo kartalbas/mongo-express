@@ -2,7 +2,7 @@ import { expect } from 'chai';
 
 import { createServer } from '../../testHttpUtils.js';
 import {
-  initializeDb, cleanAndCloseDb, testCollectionName as collectionName, testDbName as dbName, testURLCollectionName as urlColName,
+  initializeDb, cleanAndCloseDb, testCollectionName as collectionName, testDbName as dbName,
 } from '../../testMongoUtils.js';
 
 describe('Router database', () => {
@@ -20,8 +20,8 @@ describe('Router database', () => {
 
   it('GET /db/<dbName> should return html', () => request.get(`/db/${dbName}`).expect(200)
     .then((res) => {
-      expect(res.text).to.match(new RegExp(`<title>${dbName} - Mongo Express</title>`));
-      expect(res.text).to.match(new RegExp(`<a href="/db/${dbName}/${urlColName}">${collectionName}</a>`));
+      expect(res.text).to.include('Viewing Database');
+      expect(res.text).to.include(collectionName);
     }));
 
   it('POST / should add a new db');

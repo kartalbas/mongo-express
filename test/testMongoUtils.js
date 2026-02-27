@@ -23,8 +23,11 @@ export const testURLCollectionName = encodeURIComponent(testCollectionName);
 export const createConnection = async () => {
   if (!mongod) {
     mongod = await MongoMemoryServer.create();
-    mongoConfig.setUri(mongod.getUri());
   }
+
+  // Always restore the URI to the non-auth mongod instance
+  // (in case createConnectionWithWrongAuth overwrote it)
+  mongoConfig.setUri(mongod.getUri());
 
   return MongoClient.connect(mongoConfig.makeConnectionUrl());
 };

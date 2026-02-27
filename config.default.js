@@ -205,5 +205,11 @@ export default {
 
     // noDelete: if noDelete is set to true, we won't show delete buttons
     noDelete: getBoolean(process.env.ME_CONFIG_OPTIONS_NO_DELETE, false),
+
+    // shellMaxResults: maximum number of documents returned by shell find/aggregate
+    shellMaxResults: Number.parseInt(process.env.ME_CONFIG_SHELL_MAX_RESULTS, 10) || 100,
+
+    // shellCommandTimeout: timeout in ms for shell command execution (default 30s)
+    shellCommandTimeout: Number.parseInt(process.env.ME_CONFIG_SHELL_COMMAND_TIMEOUT, 10) || 30_000,
   },
 };
