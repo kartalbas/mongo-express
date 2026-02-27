@@ -160,6 +160,22 @@
 
 
 {% block scripts %}
+<script>
+  // F1: Clone Document - standalone, no webpack dependency
+  function cloneDocument() {
+    try {
+      // Get document text from CodeMirror editor or fall back to textarea
+      var textarea = document.getElementById('document');
+      var cmEl = textarea.parentNode.querySelector('.cm-content');
+      var docText = cmEl ? cmEl.textContent : textarea.value;
+      sessionStorage.setItem('meCloneDocument', docText);
+      var s = ME_SETTINGS;
+      window.location.href = s.baseHref + 'db/' + s.dbName + '/' + s.collectionName + '?clone=1';
+    } catch (e) {
+      alert('Clone failed: ' + e.message);
+    }
+  }
+</script>
 <script src="{{ baseHref }}{{ assets.codemirror.js }}"></script>
 <script src="{{ baseHref }}{{ assets.document.js }}"></script>
 {% if assets.geomap %}
