@@ -26,7 +26,6 @@ COPY --from=build /dockerbuild/*.json /opt/mongo-express/
 COPY --from=build /dockerbuild/.yarn /opt/mongo-express/.yarn/
 COPY --from=build /dockerbuild/yarn.lock /opt/mongo-express/
 COPY --from=build /dockerbuild/.yarnrc.yml /opt/mongo-express/
-COPY --from=build /dockerbuild/.npmignore /opt/mongo-express/
 
 RUN apk -U add --no-cache \
         bash \

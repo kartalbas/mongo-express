@@ -1,0 +1,27 @@
+{
+  "be": {
+    "auth": {
+      "loginSuccess": "Anmeldung erfolgreich",
+      "logoutSuccess": "Abgemeldet",
+      "invalidCredentials": "Ungültiger Benutzername oder Passwort",
+      "unauthorized": "Authentifizierung erforderlich",
+      "noSession": "Keine aktive Sitzung",
+      "userNotFound": "Benutzer nicht gefunden",
+      "wrongPassword": "Aktuelles Passwort ist falsch",
+      "passwordChanged": "Passwort erfolgreich geändert"
+    },
+    "validation": {
+      "failed": "Validierung fehlgeschlagen"
+    },
+    "error": {
+      "forbidden": "Administratorzugriff erforderlich",
+      "forbiddenMonitoring": "Administratorzugriff für Monitoring erforderlich",
+      "internal": "Interner Serverfehler",
+      "opIdRequired": "opId ist erforderlich"
+    },
+    "monitoring": {
+      "opKilled": "Operation beendet",
+      "profilerSet": "Profiler-Level aktualisiert"
+    }
+  }
+}

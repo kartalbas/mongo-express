@@ -1,0 +1,27 @@
+{
+  "be": {
+    "auth": {
+      "loginSuccess": "Login successful",
+      "logoutSuccess": "Logged out",
+      "invalidCredentials": "Invalid username or password",
+      "unauthorized": "Authentication required",
+      "noSession": "No active session",
+      "userNotFound": "User not found",
+      "wrongPassword": "Current password is incorrect",
+      "passwordChanged": "Password changed successfully"
+    },
+    "validation": {
+      "failed": "Validation failed"
+    },
+    "error": {
+      "forbidden": "Admin access required",
+      "forbiddenMonitoring": "Admin access required for monitoring",
+      "internal": "Internal server error",
+      "opIdRequired": "opId is required"
+    },
+    "monitoring": {
+      "opKilled": "Operation killed",
+      "profilerSet": "Profiler level updated"
+    }
+  }
+}

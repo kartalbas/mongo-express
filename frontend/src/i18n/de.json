@@ -1,0 +1,34 @@
+{
+  "fe": {
+    "common": {
+      "close": "Schließen",
+      "cancel": "Abbrechen",
+      "save": "Speichern",
+      "delete": "Löschen",
+      "loading": "Laden...",
+      "error": "Fehler"
+    },
+    "login": {
+      "title": "Anmelden bei MongoSphere",
+      "username": "Benutzername",
+      "password": "Passwort",
+      "submit": "Anmelden"
+    },
+    "validation": {
+      "usernameRequired": "Benutzername ist erforderlich",
+      "passwordRequired": "Passwort ist erforderlich",
+      "currentPasswordRequired": "Aktuelles Passwort ist erforderlich",
+      "passwordMinLength": "Passwort muss mindestens 6 Zeichen lang sein",
+      "confirmPasswordRequired": "Bitte bestätigen Sie Ihr Passwort",
+      "passwordsMismatch": "Passwörter stimmen nicht überein",
+      "dbRequired": "Datenbank ist erforderlich"
+    },
+    "monitoring": {
+      "title": "Server-Überwachung"
+    },
+    "nav": {
+      "monitoring": "Überwachung",
+      "logout": "Abmelden"
+    }
+  }
+}
