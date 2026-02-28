@@ -15,6 +15,14 @@
     .CodeMirror {
       height: auto;
     }
+    #cloneDocumentModal .cm-editor {
+      min-height: 350px;
+      max-height: 70vh;
+      overflow-y: auto;
+    }
+    #cloneDocumentModal .cm-content {
+      min-height: 350px;
+    }
   </style>
 {% endblock %}
 
@@ -155,22 +163,47 @@
   </div>
 {% endif %}
 
+{% if not settings.read_only %}
+<div class="modal fade" id="cloneDocumentModal" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-xl mt-5">
+    <div class="modal-content">
+      <form id="cloneDocumentForm" method="post" action="{{ collectionUrl }}">
+        <input type="hidden" name="_csrf" value="{{ csrfToken }}">
+        <div class="modal-header">
+          <h5 class="modal-title">Clone Document</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+        </div>
+        <div class="modal-body" style="min-height:400px;">
+          <textarea id="clone-document" name="document"></textarea>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+          <button type="submit" class="btn btn-success">
+            <i data-lucide="save" class="lucide"></i> Save Clone
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+{% endif %}
+
 {% endblock %}
 
 
 {% block scripts %}
 <script>
-  // F1: Clone Document - reads raw doc from server-rendered JSON
+  // F1: Clone Document - opens in-page dialog with doc minus _id
   function cloneDocument() {
     try {
       var jsonEl = document.getElementById('clone-document-json');
       if (!jsonEl) { alert('Clone failed: document data not found'); return; }
       var docText = jsonEl.textContent;
-      // Strip _id field so a new one is generated on insert
-      var stripped = docText.replace(/^\s*"_id"\s*:\s*(?:ObjectId\([^)]*\)|"[^"]*"|[^\n,}]+)\s*,?\s*\n?/m, '');
-      sessionStorage.setItem('meCloneDocument', stripped);
-      var s = ME_SETTINGS;
-      window.location.href = s.baseHref + 'db/' + s.dbName + '/' + s.collectionName + '?clone=1';
+      // Strip _id — handles both quoted "_id": and unquoted _id: (BSON extended JS format)
+      var stripped = docText.replace(/^\s*"?_id"?\s*:\s*(?:ObjectId\([^)]*\)|"[^"]*"|[^\n,}]+)\s*,?\s*\n?/m, '');
+      document.getElementById('clone-document').value = stripped;
+      var modal = new bootstrap.Modal(document.getElementById('cloneDocumentModal'));
+      modal.show();
     } catch (e) {
       alert('Clone failed: ' + e.message);
     }
